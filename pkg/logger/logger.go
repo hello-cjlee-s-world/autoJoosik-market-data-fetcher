@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type Config struct {
+type LoggerConfig struct {
 	Level         string
 	Filename      string
 	MaxSize       int
@@ -21,7 +21,7 @@ type Config struct {
 var sugar *zap.SugaredLogger
 
 // main.go 에서 initialize 함, 설정 파일에서 로그레벨 불러와서 설정
-func LoggerInit(loggerConfig Config) {
+func LoggerInit(loggerConfig LoggerConfig) {
 	strLevel := strings.ToLower(loggerConfig.Level)
 	var level zap.AtomicLevel
 	switch strLevel {

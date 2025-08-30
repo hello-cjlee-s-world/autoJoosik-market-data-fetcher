@@ -27,17 +27,23 @@ type databaseStruct struct {
 	Password        string `mapstructure:"password"`
 	Host            string `mapstructure:"host"`
 	Port            int    `mapstructure:"port"`
-	DBName          string `mapstructure:"DBName"`
+	DBName          string `mapstructure:"dbName"`
 	MaxIdleConn     int    `mapstructure:"maxIdleConn"`
 	ConnMaxLifetime int    `mapstructure:"connMaxLifetime"`
 	SSLMode         string `mapstructure:"sslMode"`
 }
 
+type kiwoomApiStruct struct {
+	AppKey    string `mapstructure:"appKey"`
+	SecretKey string `mapstructure:"secretKey"`
+}
+
 type PropertiesInfo struct {
 	configFile string
-	Server     serverStruct   `mapstructure:"server"`
-	Logging    loggingStruct  `mapstructure:"logging"`
-	Database   databaseStruct `mapstructure:"database"`
+	Server     serverStruct    `mapstructure:"server"`
+	Logging    loggingStruct   `mapstructure:"logging"`
+	Database   databaseStruct  `mapstructure:"database"`
+	KiwoomApi  kiwoomApiStruct `mapstructure:"kiwoomApi"`
 }
 
 func (p *PropertiesInfo) Init(configFile string) {

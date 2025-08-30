@@ -1,0 +1,23 @@
+server:
+  port: 6070
+  title: autoJoosik_market_data_fetcher
+  contextPath: /auto
+
+logging:
+  level: debug
+  filename: ./logs/app.log
+  maxSize: 10
+  maxBackups: 10
+  maxAge: 10
+  compress: false
+  consoleOutput: true
+
+database:
+  User: test
+  Password: test
+  Host: testest
+  Port: 80808
+  Name: test
+  MaxIdleConn: 10
+  ConnMaxLifetime: 10
+

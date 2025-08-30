@@ -4,6 +4,7 @@ go 1.22.9
 
 require (
 	github.com/alexflint/go-arg v1.6.0
+	github.com/lib/pq v1.10.9
 	github.com/spf13/viper v1.20.1
 	go.uber.org/zap v1.27.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1

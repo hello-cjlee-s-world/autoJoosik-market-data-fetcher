@@ -2,7 +2,6 @@ package properties
 
 import (
 	"autoJoosik-market-data-fetcher/pkg/logger"
-	"fmt"
 	"github.com/spf13/viper"
 	"sync"
 )
@@ -27,10 +26,11 @@ type databaseStruct struct {
 	User            string `mapstructure:"user"`
 	Password        string `mapstructure:"password"`
 	Host            string `mapstructure:"host"`
-	Port            string `mapstructure:"port"`
-	Name            string `mapstructure:"name"`
+	Port            int    `mapstructure:"port"`
+	DBName          string `mapstructure:"DBName"`
 	MaxIdleConn     int    `mapstructure:"maxIdleConn"`
 	ConnMaxLifetime int    `mapstructure:"connMaxLifetime"`
+	SSLMode         string `mapstructure:"sslMode"`
 }
 
 type PropertiesInfo struct {
@@ -47,7 +47,6 @@ func (p *PropertiesInfo) Init(configFile string) {
 	viper.SetConfigType("yaml")
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {
-		fmt.Println("Properties init error:", err)
 		logger.Error("Properties init",
 			"msg", err.Error(),
 		)

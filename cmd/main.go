@@ -1,10 +1,11 @@
 package main
 
 import (
-	"autoJoosik-market-data-fetcher/internal/database"
+	"autoJoosik-market-data-fetcher/internal/datasource"
 	"autoJoosik-market-data-fetcher/internal/kiwoomApi"
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"autoJoosik-market-data-fetcher/pkg/properties"
+	"fmt"
 	"github.com/alexflint/go-arg"
 	"sync"
 )
@@ -45,7 +46,17 @@ func main() {
 	wg.Add(1)
 
 	// db 연결
-	database.DatabaseInit()
+	datasource.DatasourceInit(datasource.DBConfig{
+		Url: fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+			props.Database.User,
+			props.Database.Password,
+			props.Database.Host,
+			props.Database.Port,
+			props.Database.Database,
+			props.Database.SSLMode,
+		),
+		MaximumPoolSize: props.Database.MaximumPoolSize,
+	})
 
 	// api 접속 test
 	KiwoomApiService := kiwoomApi.KiwoomApiConfig{

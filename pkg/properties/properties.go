@@ -27,10 +27,11 @@ type databaseStruct struct {
 	Password        string `mapstructure:"password"`
 	Host            string `mapstructure:"host"`
 	Port            int    `mapstructure:"port"`
-	DBName          string `mapstructure:"dbName"`
+	Database        string `mapstructure:"database"`
 	MaxIdleConn     int    `mapstructure:"maxIdleConn"`
 	ConnMaxLifetime int    `mapstructure:"connMaxLifetime"`
 	SSLMode         string `mapstructure:"sslMode"`
+	MaximumPoolSize int    `mapstructure:"maximumPoolSize"`
 }
 
 type kiwoomApiStruct struct {

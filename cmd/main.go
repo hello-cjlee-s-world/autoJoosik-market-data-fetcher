@@ -58,10 +58,10 @@ func main() {
 		MaximumPoolSize: props.Database.MaximumPoolSize,
 	})
 
-	// api 접속 test
-	KiwoomApiService := kiwoomApi.KiwoomApiConfig{
-		props.KiwoomApi.AppKey,
-		props.KiwoomApi.SecretKey,
-	}
-	KiwoomApiService.Initialize()
+	// kiwoom api 초기화
+	kiwoomApi.KiwoomInit(kiwoomApi.KiwoomConfig{
+		AppKey:    props.KiwoomApi.AppKey,
+		SecretKey: props.KiwoomApi.SecretKey,
+	})
+
 }

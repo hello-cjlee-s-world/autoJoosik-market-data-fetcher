@@ -3,8 +3,11 @@ package main
 import (
 	"autoJoosik-market-data-fetcher/internal/datasource"
 	"autoJoosik-market-data-fetcher/internal/kiwoomApi"
+	"autoJoosik-market-data-fetcher/internal/model"
+	"autoJoosik-market-data-fetcher/internal/repository"
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"autoJoosik-market-data-fetcher/pkg/properties"
+	"context"
 	"fmt"
 	"github.com/alexflint/go-arg"
 	"sync"
@@ -63,5 +66,11 @@ func main() {
 		AppKey:    props.KiwoomApi.AppKey,
 		SecretKey: props.KiwoomApi.SecretKey,
 	})
+
+	rst, err := kiwoomApi.GetStockInfo()
+
+	if err == nil {
+		err = repository.InsertStockInfo(context.Background(), datasource.GetPool(), model.ToStockInfoEntity(rst))
+	}
 
 }

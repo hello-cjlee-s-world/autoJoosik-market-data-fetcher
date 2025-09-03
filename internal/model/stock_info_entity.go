@@ -1,49 +1,67 @@
 package model
 
+import (
+	"autoJoosik-market-data-fetcher/pkg/logger"
+	"encoding/json"
+)
+
 type StockInfoEntity struct {
-	stkCd         string `db:"stk_cd"`
-	stkNm         string `db:"stk_nm"`
-	setlMm        string `db:"setl_mm"`
-	fav           string `db:"fav"`
-	cap           string `db:"cap"`
-	floStk        string `db:"flo_stk"`
-	crdRt         string `db:"crd_rt"`
-	oyrHgst       string `db:"oyr_hgst"`
-	oyrLwst       string `db:"oyr_lwst"`
-	mac           string `db:"mac"`
-	macWght       string `db:"mac_wght"`
-	forExhRt      string `db:"for_exh_rt"`
-	replPric      string `db:"repl_pric"`
-	per           string `db:"per"`
-	eps           string `db:"eps"`
-	roe           string `db:"roe"`
-	pbr           string `db:"pbr"`
-	ev            string `db:"ev"`
-	bps           string `db:"bps"`
-	saleAmt       string `db:"sale_amt"`
-	busPro        string `db:"bus_pro"`
-	cupNga        string `db:"cup_nga"`
-	hgst          string `db:"250hgst"`
-	lwst          string `db:"250lwst"`
-	highPric      string `db:"high_pric"`
-	openPric      string `db:"open_pric"`
-	lowPric       string `db:"low_pric"`
-	uplPric       string `db:"upl_pric"`
-	lstPric       string `db:"lst_pric"`
-	basePpric     string `db:"base_pric"`
-	expCntrPric   string `db:"exp_cntr_pric"`
-	expCntrQty    string `db:"exp_cntr_qty"`
-	hgstPricDt    string `db:"250hgst_pric_dt"`
-	hgstPricPreRt string `db:"250hgst_pric_pre_rt"`
-	lwstPricDt    string `db:"250lwst_pric_dt"`
-	lwstPricPreRt string `db:"250lwst_pric_pre_rt"`
-	curPrc        string `db:"cur_prc"`
-	preSig        string `db:"pre_sig"`
-	predPre       string `db:"pred_pre"`
-	fluRt         string `db:"flu_rt"`
-	trdeQty       string `db:"trde_qty"`
-	trdePre       string `db:"trde_pre"`
-	favUnit       string `db:"fav_unit"`
-	dstrStk       string `db:"dstr_stk"`
-	dstrRt        string `db:"dstr_rt"`
+	StkCd         string `db:"stk_cd" json:"stk_cd"`
+	StkNm         string `db:"stk_nm" json:"stk_nm"`
+	SetlMm        string `db:"setl_mm" json:"setl_mm"`
+	Fav           string `db:"fav" json:"fav"`
+	Cap           string `db:"cap" json:"cap"`
+	FloStk        string `db:"flo_stk" json:"flo_stk"`
+	CrdRt         string `db:"crd_rt" json:"crd_rt"`
+	OyrHgst       string `db:"oyr_hgst" json:"oyr_hgst"`
+	OyrLwst       string `db:"oyr_lwst" json:"oyr_lwst"`
+	Mac           string `db:"mac" json:"mac"`
+	MacWght       string `db:"mac_wght" json:"mac_wght"`
+	ForExhRt      string `db:"for_exh_rt" json:"for_exh_rt"`
+	ReplPric      string `db:"repl_pric" json:"repl_pric"`
+	Per           string `db:"per" json:"per"`
+	Eps           string `db:"eps" json:"eps"`
+	Roe           string `db:"roe" json:"roe"`
+	Pbr           string `db:"pbr" json:"pbr"`
+	Ev            string `db:"ev" json:"ev"`
+	Bps           string `db:"bps" json:"bps"`
+	SaleAmt       string `db:"sale_amt" json:"sale_amt"`
+	BusPro        string `db:"bus_pro" json:"bus_pro"`
+	CupNga        string `db:"cup_nga" json:"cup_nga"`
+	Hgst250       string `db:"250hgst" json:"250hgst"`
+	Lwst250       string `db:"250lwst" json:"250lwst"`
+	HighPric      string `db:"high_pric" json:"high_pric"`
+	OpenPric      string `db:"open_pric" json:"open_pric"`
+	LowPric       string `db:"low_pric" json:"low_pric"`
+	UplPric       string `db:"upl_pric" json:"upl_pric"`
+	LstPric       string `db:"lst_pric" json:"lst_pric"`
+	BasePric      string `db:"base_pric" json:"base_pric"`
+	ExpCntrPric   string `db:"exp_cntr_pric" json:"exp_cntr_pric"`
+	ExpCntrQty    string `db:"exp_cntr_qty" json:"exp_cntr_qty"`
+	Hgst250PricDt string `db:"250hgst_pric_dt" json:"250hgst_pric_dt"`
+	Hgst250PreRt  string `db:"250hgst_pric_pre_rt" json:"250hgst_pric_pre_rt"`
+	Lwst250PricDt string `db:"250lwst_pric_dt" json:"250lwst_pric_dt"`
+	Lwst250PreRt  string `db:"250lwst_pric_pre_rt" json:"250lwst_pric_pre_rt"`
+	CurPrc        string `db:"cur_prc" json:"cur_prc"`
+	PreSig        string `db:"pre_sig" json:"pre_sig"`
+	PredPre       string `db:"pred_pre" json:"pred_pre"`
+	FluRt         string `db:"flu_rt" json:"flu_rt"`
+	TrdeQty       string `db:"trde_qty" json:"trde_qty"`
+	TrdePre       string `db:"trde_pre" json:"trde_pre"`
+	FavUnit       string `db:"fav_unit" json:"fav_unit"`
+	DstrStk       string `db:"dstr_stk" json:"dstr_stk"`
+	DstrRt        string `db:"dstr_rt" json:"dstr_rt"`
+}
+
+func ToStockInfoEntity(str string) StockInfoEntity {
+	//strObj := map[string]string{}
+	//err := json.Unmarshal([]byte(str), &strObj)
+	var entity StockInfoEntity
+	err := json.Unmarshal([]byte(str), &entity)
+	if err != nil {
+		logger.Error("While doing toStockInfoEntity :: ", err.Error())
+	}
+	//entity := StockInfoEntity{}
+
+	return entity
 }

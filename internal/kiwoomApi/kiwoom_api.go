@@ -32,6 +32,7 @@ func KiwoomInit(kiwoomConfig KiwoomConfig) {
 		tokenObj := map[string]string{}
 		err = json.Unmarshal([]byte(token), &tokenObj)
 		if err != nil {
+			kwConfig.Token = tokenObj["token"]
 			rst, err := GetStockInfo()
 			if err != nil {
 				fmt.Println("결과값 test 실패 ::", rst)
@@ -40,7 +41,6 @@ func KiwoomInit(kiwoomConfig KiwoomConfig) {
 				fmt.Println("결과값 test :: " + rst)
 			}
 		}
-		kwConfig.Token = tokenObj["token"]
 	}
 }
 

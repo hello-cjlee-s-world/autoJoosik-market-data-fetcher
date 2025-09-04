@@ -47,7 +47,7 @@ CREATE TABLE stock_info ( --주식기본정보요청
 );
 
 CREATE TABLE trade_info_log ( --체결정보
-                            tm               VARCHAR(20),             -- 시간 (API 그대로 저장)
+                            tm               TIMESTAMP,             -- 시간 (API 그대로 저장)
                             cur_prc          NUMERIC(18,2),           -- 현재가
                             pred_pre         NUMERIC(18,2),           -- 전일대비
                             pre_rt           NUMERIC(10,4),           -- 대비율 (%)
@@ -59,13 +59,13 @@ CREATE TABLE trade_info_log ( --체결정보
                             acc_trde_prica   NUMERIC(20,2),           -- 누적거래대금
                             cntr_str         NUMERIC(10,2),           -- 체결강도
                             stex_tp          VARCHAR(10),             -- 거래소구분 (KRX, NXT, 통합)
-
+                            stk_cd           VARCHAR(20) ,            -- 종목코드
                             created_at       TIMESTAMPTZ DEFAULT NOW() -- 로그 적재 시각
 );
 CREATE INDEX idx_trade_info_log_tm ON trade_info_log (tm);
 CREATE INDEX idx_trade_info_log_stextp ON trade_info_log (stex_tp);
 CREATE INDEX idx_trade_info_log_created_at ON trade_info_log (created_at);
-
+ALTER TABLE trade_info_log ADD CONSTRAINT trade_info_log_unique UNIQUE (stk_cd, tm, cur_prc, cntr_trde_qty);
 
 CREATE TABLE orderbook_log ( -- 주식호가
                                id                   BIGSERIAL PRIMARY KEY,     -- 내부 PK

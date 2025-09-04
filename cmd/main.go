@@ -68,9 +68,17 @@ func main() {
 	})
 
 	rst, err := kiwoomApi.GetStockInfo()
-
 	if err == nil {
-		err = repository.InsertStockInfo(context.Background(), datasource.GetPool(), model.ToStockInfoEntity(rst))
+		err = repository.UpsertStockInfo(context.Background(), datasource.GetPool(), model.ToStockInfoEntity(rst))
 	}
 
+	stkCd := "005930"
+	rst, err = kiwoomApi.GetTradeInfoLog(stkCd)
+	if err == nil {
+		fmt.Println("GetTradeInfoLog", rst)
+		err = repository.UpsertTradeInfoBatch(context.Background(), datasource.GetPool(), model.ToTradeInfoLogEntity(rst, stkCd))
+		if err != nil {
+			fmt.Println("UpsertTradeInfoBatch", err.Error())
+		}
+	}
 }

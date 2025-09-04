@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 )
 
+// StockInfoEntity 주식 기본 정보
 type StockInfoEntity struct {
 	StkCd         string `db:"stk_cd" json:"stk_cd"`
 	StkNm         string `db:"stk_nm" json:"stk_nm"`
@@ -54,14 +55,11 @@ type StockInfoEntity struct {
 }
 
 func ToStockInfoEntity(str string) StockInfoEntity {
-	//strObj := map[string]string{}
-	//err := json.Unmarshal([]byte(str), &strObj)
 	var entity StockInfoEntity
 	err := json.Unmarshal([]byte(str), &entity)
 	if err != nil {
-		logger.Error("While doing toStockInfoEntity :: ", err.Error())
+		logger.Error("While doing ToStockInfoEntity :: ", err.Error())
 	}
-	//entity := StockInfoEntity{}
 
 	return entity
 }

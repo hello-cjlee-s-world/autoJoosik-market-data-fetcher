@@ -121,3 +121,198 @@ func GetStockInfo() (string, error) {
 
 	return string(body), nil
 }
+
+func GetTradeInfoLog() (string, error) {
+	url := "https://api.kiwoom.com/api/dostk/stkinfo"
+	payload := map[string]string{
+		"stk_cd": "005930",
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("api-id", "ka10003")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", kwConfig.Token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	//var token TokenResponse
+	//if err := json.Unmarshal(body, &token); err != nil {
+	//	return nil, err
+	//}
+
+	return string(body), nil
+}
+
+func GetOrderBookLog() (string, error) {
+	url := "https://api.kiwoom.com/api/dostk/mrkcond"
+	payload := map[string]string{
+		"stk_cd": "005930",
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("api-id", "ka10004")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", kwConfig.Token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	//var token TokenResponse
+	//if err := json.Unmarshal(body, &token); err != nil {
+	//	return nil, err
+	//}
+
+	return string(body), nil
+}
+
+func GetStockDailyLog() (string, error) {
+	url := "https://api.kiwoom.com/api/dostk/mrkcond"
+	payload := map[string]string{
+		"stk_cd": "005930",
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("api-id", "ka10005")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", kwConfig.Token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	//var token TokenResponse
+	//if err := json.Unmarshal(body, &token); err != nil {
+	//	return nil, err
+	//}
+
+	return string(body), nil
+}
+
+func GetAccountProfitLog() (string, error) {
+	url := "https://api.kiwoom.com/api/dostk/acnt"
+	payload := map[string]string{
+		"stex_tp": "1",
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("api-id", "ka10085")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", kwConfig.Token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	//var token TokenResponse
+	//if err := json.Unmarshal(body, &token); err != nil {
+	//	return nil, err
+	//}
+
+	return string(body), nil
+}
+
+func GetAtnStlInfr() (string, error) {
+	url := "https://api.kiwoom.com/api/dostk/stkinfo"
+	payload := map[string]string{
+		"stk_cd": "039490", //KRX
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("api-id", "ka10095")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", kwConfig.Token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	//var token TokenResponse
+	//if err := json.Unmarshal(body, &token); err != nil {
+	//	return nil, err
+	//}
+
+	return string(body), nil
+}

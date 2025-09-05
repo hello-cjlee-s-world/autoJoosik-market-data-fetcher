@@ -1,4 +1,12 @@
-CREATE TABLE stock_info ( --주식기본정보요청
+DROP TABLE stock_info;
+DROP TABLE trade_info_log;
+DROP TABLE orderbook_log;
+DROP TABLE stock_daily_log
+DROP TABLE stock_tick_log
+DROP TABLE account_profit_log
+DROP TABLE atn_stk_infr
+
+    CREATE TABLE stock_info ( --주식기본정보요청
                             stk_cd              VARCHAR(20) PRIMARY KEY,   -- 종목코드
                             stk_nm              VARCHAR(40),              -- 종목명
                             setl_mm             VARCHAR(20),              -- 결산월
@@ -295,4 +303,13 @@ CREATE TABLE atn_stk_infr ( --관심종목정보요청
                               theta           VARCHAR(20),   -- 쎄타
                               vega            VARCHAR(20),   -- 베가
                               law             VARCHAR(20)    -- 로
+);
+
+CREATE TABLE schedule_info ( -- 스케줄 목록
+                               id SERIAL PRIMARY KEY,
+                               name VARCHAR(100) NOT NULL,       -- 작업 이름
+                               schedule VARCHAR(50) NOT NULL,    -- 실행 스케줄 ("every 10s", "09:00" 등)
+                               task_type VARCHAR(50) NOT NULL,   -- 실행할 작업 타입
+                               enabled BOOLEAN DEFAULT true,     -- 활성화 여부
+                               created_at TIMESTAMP DEFAULT now()
 );

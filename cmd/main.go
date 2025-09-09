@@ -12,7 +12,9 @@ import (
 	"fmt"
 	"github.com/alexflint/go-arg"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"log"
 	"sync"
+	"time"
 )
 
 type Args struct {
@@ -50,7 +52,7 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	// db 연결
+	// db 연결 초기화
 	datasource.DatasourceInit(datasource.DBConfig{
 		Url: fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
 			props.Database.User,
@@ -69,51 +71,61 @@ func main() {
 		SecretKey: props.KiwoomApi.SecretKey,
 	})
 
-	rst, err := kiwoomApi.GetStockInfo()
-	if err == nil {
-		err = repository.UpsertStockInfo(context.Background(), datasource.GetPool(), model.ToStockInfoEntity(rst))
-	}
-
-	stkCd := "005930"
-	rst, err = kiwoomApi.GetTradeInfoLog(stkCd)
-	if err == nil {
-		fmt.Println("GetTradeInfoLog", rst)
-		err = repository.UpsertTradeInfoBatch(context.Background(), datasource.GetPool(), model.ToTradeInfoLogEntity(rst, stkCd))
-		if err != nil {
-			fmt.Println("UpsertTradeInfoBatch", err.Error())
-		}
-	}
-
-	TaskConfig := scheduler.LoadTaskConfigs(context.Background(), datasource.GetPool())
-	fmt.Println(TaskConfig)
-}
-
-func getSchedule(ctx context.Context, pool pgxpool.Pool) {
-	//s := gocron.NewScheduler(time.Local)
-
-	// 동적으로 로드
-	//taskConfigs := scheduler.LoadTaskConfigs(ctx, pool)
-	//for _, cfg := range taskConfigs {
-	//	switch {
-	//	// every N seconds/minutes 등 처리
-	//	case strings.HasPrefix(cfg.Schedule, "every "):
-	//		parts := strings.Split(cfg.Schedule, " ")
-	//		if len(parts) != 2 {
-	//			fmt.Println("잘못된 스케줄:", cfg.Schedule)
-	//			continue
-	//		}
-	//		if parts[1] == "10s" {
-	//			s.Every(10).Seconds().Do(getTaskFunc(cfg.TaskType))
-	//		}
-	//
-	//	// 특정 시간 실행 (ex: "09:00")
-	//	case strings.Contains(cfg.Schedule, ":"):
-	//		s.Every(1).Day().At(cfg.Schedule).Do(getTaskFunc(cfg.TaskType))
-	//
-	//	default:
-	//		fmt.Println("지원하지 않는 스케줄:", cfg.Schedule)
-	//	}
+	//rst, err := kiwoomApi.GetStockInfo()
+	//if err == nil {
+	//	err = repository.UpsertStockInfo(context.Background(), datasource.GetPool(), model.ToStockInfoEntity(rst))
 	//}
 	//
-	//s.StartAsync()
+	//stkCd := "005930"
+	//rst, err = kiwoomApi.GetTradeInfoLog(stkCd)
+	//if err == nil {
+	//	fmt.Println("GetTradeInfoLog", rst)
+	//	err = repository.UpsertTradeInfoBatch(context.Background(), datasource.GetPool(), model.ToTradeInfoLogEntity(rst, stkCd))
+	//	if err != nil {
+	//		fmt.Println("UpsertTradeInfoBatch", err.Error())
+	//	}
+	//}
+
+	// scheduler 초기화
+	getSchedule(context.Background(), datasource.GetPool())
+}
+
+func getSchedule(ctx context.Context, pool *pgxpool.Pool) {
+	// 실제 업무 함수들 등록 (task_type -> 함수). 필요 시 pool 캡쳐해서 사용하세요.
+	reg := scheduler.Registry{
+		"GetTradeInfoLog": func(ctx context.Context) error {
+			skdCd := "005930"
+			rst, _ := kiwoomApi.GetTradeInfoLog(skdCd)
+			ent := model.ToTradeInfoLogEntity(skdCd, rst)
+			err := repository.UpsertTradeInfoBatch(ctx, pool, ent)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+	}
+
+	// 러너 생성 & 시작
+	r := scheduler.NewRunner(pool, reg)
+	if err := r.Start(ctx); err != nil {
+		log.Fatal("scheduler start:", err)
+	}
+	log.Println("[scheduler] started")
+
+	// (옵션) 주기적 리로드: schedule_info 변경 반영
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			r.Stop()
+			log.Println("[scheduler] stopped")
+			return
+		case <-ticker.C:
+			if err := r.Reload(ctx); err != nil {
+				log.Println("[scheduler] reload error:", err)
+			}
+		}
+	}
 }

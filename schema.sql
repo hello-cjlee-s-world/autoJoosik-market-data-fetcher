@@ -313,3 +313,6 @@ CREATE TABLE schedule_info ( -- 스케줄 목록
                                enabled BOOLEAN DEFAULT true,     -- 활성화 여부
                                created_at TIMESTAMP DEFAULT now()
 );
+INSERT INTO public.schedule_info
+(id, "name", schedule, task_type, enabled, created_at)
+VALUES(1, 'trade-info', 'every 10s', 'GetTradeInfoLog', true, '2025-09-05 17:04:14.463');

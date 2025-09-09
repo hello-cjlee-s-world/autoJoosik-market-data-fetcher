@@ -122,10 +122,10 @@ func GetStockInfo() (string, error) {
 	return string(body), nil
 }
 
-func GetTradeInfoLog() (string, error) {
+func GetTradeInfoLog(stkCd string) (string, error) {
 	url := "https://api.kiwoom.com/api/dostk/stkinfo"
 	payload := map[string]string{
-		"stk_cd": "005930",
+		"stk_cd": stkCd,
 	}
 
 	jsonData, err := json.Marshal(payload)

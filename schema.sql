@@ -1,4 +1,12 @@
-CREATE TABLE stock_info ( --주식기본정보요청
+DROP TABLE stock_info;
+DROP TABLE trade_info_log;
+DROP TABLE orderbook_log;
+DROP TABLE stock_daily_log
+DROP TABLE stock_tick_log
+DROP TABLE account_profit_log
+DROP TABLE atn_stk_infr
+
+    CREATE TABLE stock_info ( --주식기본정보요청
                             stk_cd              VARCHAR(20) PRIMARY KEY,   -- 종목코드
                             stk_nm              VARCHAR(40),              -- 종목명
                             setl_mm             VARCHAR(20),              -- 결산월
@@ -47,7 +55,7 @@ CREATE TABLE stock_info ( --주식기본정보요청
 );
 
 CREATE TABLE trade_info_log ( --체결정보
-                            tm               VARCHAR(20),             -- 시간 (API 그대로 저장)
+                            tm               TIMESTAMP,             -- 시간 (API 그대로 저장)
                             cur_prc          NUMERIC(18,2),           -- 현재가
                             pred_pre         NUMERIC(18,2),           -- 전일대비
                             pre_rt           NUMERIC(10,4),           -- 대비율 (%)
@@ -59,13 +67,13 @@ CREATE TABLE trade_info_log ( --체결정보
                             acc_trde_prica   NUMERIC(20,2),           -- 누적거래대금
                             cntr_str         NUMERIC(10,2),           -- 체결강도
                             stex_tp          VARCHAR(10),             -- 거래소구분 (KRX, NXT, 통합)
-
+                            stk_cd           VARCHAR(20) ,            -- 종목코드
                             created_at       TIMESTAMPTZ DEFAULT NOW() -- 로그 적재 시각
 );
 CREATE INDEX idx_trade_info_log_tm ON trade_info_log (tm);
 CREATE INDEX idx_trade_info_log_stextp ON trade_info_log (stex_tp);
 CREATE INDEX idx_trade_info_log_created_at ON trade_info_log (created_at);
-
+ALTER TABLE trade_info_log ADD CONSTRAINT trade_info_log_unique UNIQUE (stk_cd, tm, cur_prc, cntr_trde_qty);
 
 CREATE TABLE orderbook_log ( -- 주식호가
                                id                   BIGSERIAL PRIMARY KEY,     -- 내부 PK
@@ -296,3 +304,15 @@ CREATE TABLE atn_stk_infr ( --관심종목정보요청
                               vega            VARCHAR(20),   -- 베가
                               law             VARCHAR(20)    -- 로
 );
+
+CREATE TABLE schedule_info ( -- 스케줄 목록
+                               id SERIAL PRIMARY KEY,
+                               name VARCHAR(100) NOT NULL,       -- 작업 이름
+                               schedule VARCHAR(50) NOT NULL,    -- 실행 스케줄 ("every 10s", "09:00" 등)
+                               task_type VARCHAR(50) NOT NULL,   -- 실행할 작업 타입
+                               enabled BOOLEAN DEFAULT true,     -- 활성화 여부
+                               created_at TIMESTAMP DEFAULT now()
+);
+INSERT INTO public.schedule_info
+(id, "name", schedule, task_type, enabled, created_at)
+VALUES(1, 'trade-info', 'every 10s', 'GetTradeInfoLog', true, '2025-09-05 17:04:14.463');

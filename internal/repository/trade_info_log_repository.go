@@ -40,7 +40,7 @@ func UpsertTradeInfo(ctx context.Context, pool *pgxpool.Pool, entity model.Trade
 		logger.Error("UpsertTradeInfo :: error :: ", err)
 		return err
 	}
-	logger.Debug("UpsertTradeInfo :: success :: ", entity.StkCd)
+	logger.Debug("UpsertTradeInfo :: success :: ", "stk_cd", entity.StkCd)
 	return nil
 }
 

@@ -70,7 +70,7 @@ func (r *Runner) Reload(ctx context.Context) error {
 // DB에서 스케줄 읽기
 func LoadTaskConfigs(ctx context.Context, pool *pgxpool.Pool) ([]TaskConfig, error) {
 	// enabled 컬럼 없을 수 있으니 심플하게 3개만
-	rows, err := pool.Query(ctx, `SELECT name, schedule, task_type FROM schedule_info`)
+	rows, err := pool.Query(ctx, `SELECT name, schedule, task_type FROM schedule_info WHERE enabled = true`)
 	if err != nil {
 		return nil, err
 	}
@@ -108,11 +108,11 @@ func (r *Runner) scheduleOne(ctx context.Context, c TaskConfig) error {
 		var j *gocron.Job
 		switch unit {
 		case "s":
-			j, err = r.s.Every(uint64(n)).Seconds().Do(func() { _ = task(ctx) })
+			j, err = r.s.Every(n).Seconds().Do(func() { _ = task(ctx) })
 		case "m":
-			j, err = r.s.Every(uint64(n)).Minutes().Do(func() { _ = task(ctx) })
+			j, err = r.s.Every(n).Minutes().Do(func() { _ = task(ctx) })
 		case "h":
-			j, err = r.s.Every(uint64(n)).Hours().Do(func() { _ = task(ctx) })
+			j, err = r.s.Every(n).Hours().Do(func() { _ = task(ctx) })
 		default:
 			return errors.New("unsupported every unit: " + unit)
 		}

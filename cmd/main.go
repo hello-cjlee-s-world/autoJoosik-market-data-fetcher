@@ -71,12 +71,12 @@ func main() {
 		SecretKey: props.KiwoomApi.SecretKey,
 	})
 
-	//rst, err := kiwoomApi.GetStockInfo()
+	//stkCd := "005930"
+	//rst, err := kiwoomApi.GetStockInfo(stkCd)
 	//if err == nil {
 	//	err = repository.UpsertStockInfo(context.Background(), datasource.GetPool(), model.ToStockInfoEntity(rst))
 	//}
 	//
-	//stkCd := "005930"
 	//rst, err = kiwoomApi.GetTradeInfoLog(stkCd)
 	//if err == nil {
 	//	fmt.Println("GetTradeInfoLog", rst)
@@ -91,13 +91,29 @@ func main() {
 }
 
 func getSchedule(ctx context.Context, pool *pgxpool.Pool) {
-	// 실제 업무 함수들 등록 (task_type -> 함수). 필요 시 pool 캡쳐해서 사용하세요.
+	// 실제 업무 함수들 등록 (task_type -> 함수). 필요 시 pool 캡쳐해서 사용
 	reg := scheduler.Registry{
 		"GetTradeInfoLog": func(ctx context.Context) error {
-			skdCd := "005930"
-			rst, _ := kiwoomApi.GetTradeInfoLog(skdCd)
-			ent := model.ToTradeInfoLogEntity(skdCd, rst)
-			err := repository.UpsertTradeInfoBatch(ctx, pool, ent)
+			stkCd := "005930"
+			rst, err := kiwoomApi.GetTradeInfoLog(stkCd)
+			if err != nil {
+				return err
+			}
+			entList := model.ToTradeInfoLogEntity(rst, stkCd)
+			err = repository.UpsertTradeInfoBatch(ctx, pool, entList)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+		"UpsertStockInfo": func(ctx context.Context) error {
+			stkCd := "005930"
+			rst, err := kiwoomApi.GetStockInfo(stkCd)
+			if err != nil {
+				return err
+			}
+			ent := model.ToStockInfoEntity(rst)
+			err = repository.UpsertStockInfo(ctx, pool, ent)
 			if err != nil {
 				return err
 			}

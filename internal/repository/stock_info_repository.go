@@ -127,10 +127,10 @@ func UpsertStockInfo(ctx context.Context, pool *pgxpool.Pool, entity model.Stock
 	)
 
 	if err != nil {
-		logger.Error("UpsertStockInfo :: error :: ", err)
+		logger.Error("UpsertStockInfo :: error :: ", "stk_cd", entity.StkCd)
 		return err
 	}
-	logger.Debug("UpsertStockInfo :: success :: ", entity.StkCd)
+	logger.Debug("UpsertStockInfo :: success :: ", "stk_cd", entity.StkCd)
 	return nil
 }
 

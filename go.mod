@@ -4,6 +4,7 @@ go 1.23.0
 
 require (
 	github.com/alexflint/go-arg v1.6.0
+	github.com/go-co-op/gocron v1.37.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/lib/pq v1.10.9
 	github.com/spf13/viper v1.20.1
@@ -14,7 +15,6 @@ require (
 require (
 	github.com/alexflint/go-scalar v1.2.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/go-co-op/gocron v1.37.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/google/uuid v1.4.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect

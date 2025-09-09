@@ -33,7 +33,7 @@ func KiwoomInit(kiwoomConfig KiwoomConfig) {
 		err = json.Unmarshal([]byte(token), &tokenObj)
 		if err != nil {
 			kwConfig.Token = tokenObj["token"]
-			rst, err := GetStockInfo()
+			rst, err := GetStockInfo("005930")
 			if err != nil {
 				fmt.Println("결과값 test 실패 ::", rst)
 				return
@@ -83,10 +83,10 @@ func GetToken() (string, error) {
 	return string(body), nil
 }
 
-func GetStockInfo() (string, error) {
+func GetStockInfo(stkCd string) (string, error) {
 	url := "https://api.kiwoom.com/api/dostk/stkinfo"
 	payload := map[string]string{
-		"stk_cd": "005930",
+		"stk_cd": stkCd,
 	}
 
 	jsonData, err := json.Marshal(payload)

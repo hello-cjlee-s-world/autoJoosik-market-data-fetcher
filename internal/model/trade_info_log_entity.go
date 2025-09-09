@@ -4,7 +4,6 @@ import (
 	"autoJoosik-market-data-fetcher/internal/utils"
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"encoding/json"
-	"fmt"
 	"time"
 )
 
@@ -79,6 +78,5 @@ func ToTradeInfoLogEntity(str string, stkCd string) []TradeInfoLogEntity {
 		entities = append(entities, raw.ToEntity(stkCd))
 	}
 
-	fmt.Println("Parsed Entities:", entities)
 	return entities
 }

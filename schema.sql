@@ -315,4 +315,10 @@ CREATE TABLE schedule_info ( -- 스케줄 목록
 );
 INSERT INTO public.schedule_info
 (id, "name", schedule, task_type, enabled, created_at)
-VALUES(1, 'trade-info', 'every 10s', 'GetTradeInfoLog', true, '2025-09-05 17:04:14.463');
+VALUES(1, 'trade-info', 'every 10s', 'GetTradeInfoLog', true, now());
+INSERT INTO public.schedule_info
+(id, "name", schedule, task_type, enabled, created_at)
+VALUES(1, 'stock-info', 'every 10s', 'GetStockInfo', true, now());
+
+CREATE TABLE public.possible_resources (resources NUMERIC);
+INSERT INTO public.possible_resources (resources) VALUES (1000000);

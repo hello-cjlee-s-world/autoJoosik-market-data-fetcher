@@ -6,22 +6,22 @@ import (
 )
 
 type stockTick struct {
-	id int
-	stk_cd
-	last_tic_cnt
-	cur_prc
-	trde_qty
-	cntr_tm
-	open_pric
-	high_pric
-	low_pric
-	upd_stkpc_tp
-	upd_rt
-	bic_inds_tp
-	sm_inds_tp
-	stk_infr
-	upd_stkpc_event
-	pred_close_pric
+	Id              int
+	stkCd           string
+	lastTicCnt      int
+	curPrc          int
+	trdeQty         int
+	cntrTm          string
+	openPric        int
+	highPric        int
+	lowPric         int
+	updStkpcTp      int
+	updRt           int
+	bicIndsTp       string
+	smIndsTp        string
+	stk_infr        string
+	upd_stkpc_event string
+	pred_close_pric int
 }
 
 func SellOrBy(ctx context.Context, pool *pgxpool.Pool) (string, err) {
@@ -30,10 +30,11 @@ func SellOrBy(ctx context.Context, pool *pgxpool.Pool) (string, err) {
 	if err != nil {
 		return nil, err
 	}
+	out := []stockTick{}
 
 	for rows.Next() {
-		var c TaskConfig
-		if err := rows.Scan(&c.Name, &c.Schedule, &c.TaskType); err != nil {
+		t := stockTick{}
+		if err := rows.Scan(&t.Name, &c.Schedule, &tickList); err != nil {
 			return nil, err
 		}
 		out = append(out, c)

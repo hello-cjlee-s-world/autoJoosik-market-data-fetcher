@@ -320,5 +320,31 @@ INSERT INTO public.schedule_info
 (id, "name", schedule, task_type, enabled, created_at)
 VALUES(1, 'stock-info', 'every 10s', 'GetStockInfo', true, now());
 
-CREATE TABLE public.possible_resources (resources NUMERIC);
-INSERT INTO public.possible_resources (resources) VALUES (1000000);
+CREATE TABLE public.investment_status( -- 투자 현황
+                               stk_cd              VARCHAR(20) PRIMARY KEY,  -- 종목코드
+                               stk_nm              VARCHAR(40),              -- 종목명
+                               amount              VARCHAR(40),              -- 양
+                               price               VARCHAR(40)               -- 가격
+);
+
+
+-- 계좌 현금 현황(스냅샷)
+CREATE TABLE cash_ledger (
+                             acct_id        TEXT PRIMARY KEY,
+                             settled_cash   NUMERIC(20,2) NOT NULL DEFAULT 0,
+                             unsettled_cash NUMERIC(20,2) NOT NULL DEFAULT 0,
+                             buying_power   NUMERIC(20,2) NOT NULL DEFAULT 0, -- 내부 정책값
+                             updated_at     TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+
+-- 정산 이벤트(매도 체결분이 정산되어 현금화되는 스케줄)
+CREATE TABLE settlement_events (
+                                   id           BIGSERIAL PRIMARY KEY,
+                                   acct_id      TEXT NOT NULL,
+                                   trade_id     TEXT NOT NULL,
+                                   stk_cd       TEXT NOT NULL,
+                                   side         TEXT NOT NULL CHECK (side IN ('SELL','BUY')),
+                                   gross_amount NUMERIC(20,2) NOT NULL,   -- 매도일 경우 +, 매수일 경우 - (수수료/세금 제외/포함 정책 선택)
+                                   settle_date  DATE NOT NULL,            -- T + settlement_days
+                                   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);

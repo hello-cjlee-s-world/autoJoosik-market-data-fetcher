@@ -119,6 +119,19 @@ func getSchedule(ctx context.Context, pool *pgxpool.Pool) {
 			}
 			return nil
 		},
+		"SellOrBuy": func(ctx context.Context) error {
+			stkCd := "005930"
+			rst, err := kiwoomApi.GetStockInfo(stkCd)
+			if err != nil {
+				return err
+			}
+			ent := model.ToStockInfoEntity(rst)
+			err = repository.UpsertStockInfo(ctx, pool, ent)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
 	}
 
 	// 러너 생성 & 시작

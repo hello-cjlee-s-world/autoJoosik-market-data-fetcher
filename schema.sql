@@ -316,3 +316,68 @@ CREATE TABLE schedule_info ( -- 스케줄 목록
 INSERT INTO public.schedule_info
 (id, "name", schedule, task_type, enabled, created_at)
 VALUES(1, 'trade-info', 'every 10s', 'GetTradeInfoLog', true, '2025-09-05 17:04:14.463');
+
+
+CREATE TABLE tb_virtual_asset ( --가상자산 테이블
+                                  asset_id         BIGSERIAL PRIMARY KEY,              -- 포지션 고유 ID
+
+                                  user_id          BIGINT       NOT NULL,              -- 사용자 ID
+                                  account_id       BIGINT       NOT NULL,              -- 계좌 ID (FK)
+
+                                  stk_cd           VARCHAR(20)  NOT NULL,              -- 종목 코드
+                                  market           VARCHAR(10)  NOT NULL,              -- 시장 구분(KOSPI/KOSDAQ 등)
+
+                                  position_side    CHAR(1)      NOT NULL,              -- 'B'=매수(롱), 'S'=매도(숏)
+
+                                  qty              NUMERIC(18,4) NOT NULL,             -- 총 보유 수량
+                                  available_qty    NUMERIC(18,4) NOT NULL,             -- 주문 가능 수량
+
+                                  avg_price        NUMERIC(18,2) NOT NULL,             -- 평균 매입단가
+                                  last_price       NUMERIC(18,2),                      -- 최근 평가 기준 가격
+
+                                  invested_amount  NUMERIC(18,2) NOT NULL,             -- 총 매입금액
+                                  eval_amount      NUMERIC(18,2),                      -- 평가금액
+                                  eval_pl          NUMERIC(18,2),                      -- 평가손익
+                                  eval_pl_rate     NUMERIC(9,4),                       -- 평가수익률(%)
+
+                                  today_buy_qty    NUMERIC(18,4) DEFAULT 0,            -- 당일 매수 총 수량
+                                  today_sell_qty   NUMERIC(18,4) DEFAULT 0,            -- 당일 매도 총 수량
+
+                                  status           VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE', -- ACTIVE / CLOSED 등
+
+                                  last_eval_at     TIMESTAMPTZ,                        -- 마지막 평가 시각
+                                  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                                  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+-- 한 계좌에서 같은 종목 + 같은 방향 포지션은 하나만 존재
+CREATE UNIQUE INDEX uq_asset_account_stkcd_side
+    ON tb_virtual_asset (account_id, stk_cd, position_side);
+
+
+
+
+CREATE TABLE tb_virtual_account (
+                                    account_id       BIGSERIAL PRIMARY KEY,          -- 계좌 ID (PK)
+                                    user_id          BIGINT     NOT NULL,            -- 사용자 ID
+
+                                    account_name     VARCHAR(50) NOT NULL,           -- 계좌 이름 (예: "모의투자 계좌1")
+
+                                    cash_balance     NUMERIC(18,2) NOT NULL,         -- 현재 사용 가능한 현금
+                                    total_invested   NUMERIC(18,2) DEFAULT 0,        -- 총 투자금액 (포지션들의 invested_amount 합)
+                                    total_eval       NUMERIC(18,2) DEFAULT 0,        -- 총 평가금액 (포지션들의 eval_amount 합)
+                                    total_pl         NUMERIC(18,2) DEFAULT 0,        -- 전체 평가손익
+                                    total_pl_rate    NUMERIC(9,4),                   -- 전체 수익률
+
+                                    deposit_amount   NUMERIC(18,2) DEFAULT 0,        -- 총 입금액(시작 자금)
+                                    withdraw_amount  NUMERIC(18,2) DEFAULT 0,        -- 총 출금액(있다면)
+
+                                    status           VARCHAR(20) DEFAULT 'ACTIVE',   -- 계좌 상태
+
+                                    created_at       TIMESTAMPTZ DEFAULT NOW(),
+                                    updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 유저 하나가 여러 가상 계좌를 가질 수 있음 → 이름 중복 방지
+CREATE UNIQUE INDEX uq_virtual_account_user_name
+    ON tb_virtual_account (user_id, account_name);
+

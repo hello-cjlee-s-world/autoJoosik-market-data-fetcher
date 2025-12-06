@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// StockInfoEntity 주식 기본 정보
+// TbVirtualAssetEntity 가상자산 테이블
 type TbVirtualAssetEntity struct {
 	AssetId        int64     `db:"asset_id" json:"asset_id"`
 	UserId         int64     `db:"user_id" json:"user_id"`

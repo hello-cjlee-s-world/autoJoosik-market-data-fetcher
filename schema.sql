@@ -356,7 +356,7 @@ CREATE UNIQUE INDEX uq_asset_account_stkcd_side
 
 
 
-CREATE TABLE tb_virtual_account (
+CREATE TABLE tb_virtual_account ( -- 가상 계좌 테이블
                                     account_id       BIGSERIAL PRIMARY KEY,          -- 계좌 ID (PK)
                                     user_id          BIGINT     NOT NULL,            -- 사용자 ID
 
@@ -380,4 +380,68 @@ CREATE TABLE tb_virtual_account (
 -- 유저 하나가 여러 가상 계좌를 가질 수 있음 → 이름 중복 방지
 CREATE UNIQUE INDEX uq_virtual_account_user_name
     ON tb_virtual_account (user_id, account_name);
+
+
+
+CREATE TABLE tb_virtual_order ( -- 주문 테이블
+                                  order_id        BIGSERIAL      PRIMARY KEY,            -- 주문 ID (PK)
+
+                                  user_id         BIGINT         NOT NULL,               -- 사용자 ID
+                                  account_id      BIGINT         NOT NULL,               -- 계좌 ID (tb_virtual_account FK 대상)
+
+                                  stk_cd          VARCHAR(20)    NOT NULL,               -- 종목 코드
+                                  market          VARCHAR(10)    NOT NULL,               -- 시장 구분 (KOSPI, KOSDAQ, ETF, US 등)
+
+                                  side            CHAR(1)        NOT NULL,               -- 'B'=매수, 'S'=매도
+                                  order_type      VARCHAR(20)    NOT NULL,               -- 'MARKET', 'LIMIT' 등
+                                  time_in_force   VARCHAR(20),                           -- 'DAY', 'IOC', 'FOK' 등 (옵션)
+
+                                  price           NUMERIC(18,2),                         -- 주문 가격 (시장가면 NULL 또는 0)
+                                  qty             NUMERIC(18,4)  NOT NULL,               -- 주문 수량
+
+                                  filled_qty      NUMERIC(18,4)  NOT NULL DEFAULT 0,     -- 누적 체결 수량
+                                  remaining_qty   NUMERIC(18,4)  NOT NULL,               -- 남은 수량 = qty - filled_qty
+
+                                  status          VARCHAR(20)    NOT NULL,               -- 'NEW','OPEN','PARTIAL','FILLED','CANCELED','REJECTED'
+
+                                  client_order_id VARCHAR(50),                           -- 클라이언트에서 부여하는 주문 ID (선택)
+                                  reason          VARCHAR(255),                          -- 거절/취소 사유 등 (옵션)
+
+                                  created_at      TIMESTAMPTZ    NOT NULL DEFAULT NOW(), -- 주문 생성 시각
+                                  updated_at      TIMESTAMPTZ    NOT NULL DEFAULT NOW()  -- 마지막 상태 변경 시각
+);
+-- 계좌 + 클라이언트 주문 ID 기준으로 유니크하게 관리하고 싶을 때 사용
+CREATE UNIQUE INDEX uq_virtual_order_client
+    ON tb_virtual_order (account_id, client_order_id);
+
+
+-- 체결 로그 테이블
+CREATE TABLE tb_virtual_trade_log (
+                                      trade_id        BIGSERIAL      PRIMARY KEY,            -- 체결 ID (PK)
+
+                                      order_id        BIGINT         NOT NULL,               -- 어떤 주문의 체결인지 (FK 후보)
+                                      user_id         BIGINT         NOT NULL,               -- 사용자 ID
+                                      account_id      BIGINT         NOT NULL,               -- 계좌 ID
+                                      stk_cd          VARCHAR(20)    NOT NULL,               -- 종목 코드
+                                      market          VARCHAR(10)    NOT NULL,               -- 시장 구분
+
+                                      side            CHAR(1)        NOT NULL,               -- 'B'=매수, 'S'=매도
+
+                                      filled_qty      NUMERIC(18,4)  NOT NULL,               -- 이번 체결 수량
+                                      filled_price    NUMERIC(18,2)  NOT NULL,               -- 이번 체결 단가
+                                      filled_amount   NUMERIC(18,2)  NOT NULL,               -- 체결 금액 = filled_qty * filled_price
+
+                                      fee_amount      NUMERIC(18,2)  DEFAULT 0,              -- 수수료 (옵션)
+                                      tax_amount      NUMERIC(18,2)  DEFAULT 0,              -- 거래세 (옵션)
+
+                                      created_at      TIMESTAMPTZ    NOT NULL DEFAULT NOW()  -- 체결 발생 시각
+);
+
+-- 주문별 체결 조회 자주 할 거라면 인덱스
+CREATE INDEX idx_trade_log_order
+    ON tb_virtual_trade_log (order_id);
+
+-- 계좌, 종목 기준 체결 조회용 인덱스 (옵션)
+CREATE INDEX idx_trade_log_account_stk
+    ON tb_virtual_trade_log (account_id, stk_cd, created_at);
 

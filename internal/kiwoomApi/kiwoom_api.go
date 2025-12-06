@@ -1,6 +1,7 @@
 package kiwoomApi
 
 import (
+	"autoJoosik-market-data-fetcher/internal/model"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -40,7 +41,17 @@ func KiwoomInit(kiwoomConfig KiwoomConfig) {
 			} else {
 				fmt.Println("결과값 test :: " + rst)
 			}
+
+			rst, err = GetOrderBookLog("005930")
+			if err != nil {
+				fmt.Println("결과값 test 실패 ::", rst)
+				return
+			} else {
+				_ = model.ToOrderBookLogEntity(rst)
+			}
+
 		}
+
 	}
 }
 
@@ -161,10 +172,10 @@ func GetTradeInfoLog(stkCd string) (string, error) {
 	return string(body), nil
 }
 
-func GetOrderBookLog() (string, error) {
+func GetOrderBookLog(stkCd string) (string, error) {
 	url := "https://api.kiwoom.com/api/dostk/mrkcond"
 	payload := map[string]string{
-		"stk_cd": "005930",
+		"stk_cd": stkCd,
 	}
 
 	jsonData, err := json.Marshal(payload)

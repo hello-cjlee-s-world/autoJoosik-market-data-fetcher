@@ -13,6 +13,7 @@ import (
 	"github.com/alexflint/go-arg"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -71,20 +72,44 @@ func main() {
 		SecretKey: props.KiwoomApi.SecretKey,
 	})
 
-	//stkCd := "005930"
-	//rst, err := kiwoomApi.GetStockInfo(stkCd)
-	//if err == nil {
-	//	err = repository.UpsertStockInfo(context.Background(), datasource.GetPool(), model.ToStockInfoEntity(rst))
-	//}
-	//
-	//rst, err = kiwoomApi.GetTradeInfoLog(stkCd)
-	//if err == nil {
-	//	fmt.Println("GetTradeInfoLog", rst)
-	//	err = repository.UpsertTradeInfoBatch(context.Background(), datasource.GetPool(), model.ToTradeInfoLogEntity(rst, stkCd))
-	//	if err != nil {
-	//		fmt.Println("UpsertTradeInfoBatch", err.Error())
-	//	}
-	//}
+	// 주식 체결 로직
+	stkCd := "005930"
+	rst, err := kiwoomApi.GetOrderBookLog(stkCd)
+	if err == nil {
+		orderBookEntity := model.ToOrderBookLogEntity(rst)
+
+		price, _ := strconv.ParseFloat(orderBookEntity.SelFprBid, 64)
+		remainingQty, _ := strconv.ParseFloat(orderBookEntity.SelFprReq, 64)
+		virtualOrderEntity := model.TbVirtualOrder{
+			UserID:        0,
+			AccountID:     0,
+			StkCd:         stkCd,
+			Market:        "KOSPI",
+			Side:          "B",
+			OrderType:     "MARKET",
+			TimeInForce:   "DAY",
+			Price:         price,
+			Qty:           1,
+			FilledQty:     0,
+			RemainingQty:  remainingQty,
+			Status:        "NEW", //'NEW','OPEN','PARTIAL','FILLED','CANCELED','REJECTED'
+			ClientOrderID: "",    // 클라이언트에서 부여하는 주문 ID (선택)
+			Reason:        "",    //-- 거절/취소 사유 등 (옵션)
+		}
+		err = repository.InsertOrderLog(context.Background(), datasource.GetPool(), virtualOrderEntity)
+		if err != nil {
+			fmt.Println("InsertOrderLog", err.Error())
+		}
+	}
+
+	rst, err = kiwoomApi.GetTradeInfoLog(stkCd)
+	if err == nil {
+		fmt.Println("GetTradeInfoLog", rst)
+		err = repository.UpsertTradeInfoBatch(context.Background(), datasource.GetPool(), model.ToTradeInfoLogEntity(rst, stkCd))
+		if err != nil {
+			fmt.Println("UpsertTradeInfoBatch", err.Error())
+		}
+	}
 
 	// scheduler 초기화
 	getSchedule(context.Background(), datasource.GetPool())

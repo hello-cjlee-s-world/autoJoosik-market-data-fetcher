@@ -2,15 +2,14 @@ package repository
 
 import (
 	"autoJoosik-market-data-fetcher/internal/model"
+	_interface "autoJoosik-market-data-fetcher/internal/repository/interface"
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"context"
-	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func InsertOrderLog(ctx context.Context, pool *pgxpool.Pool, entity model.TbVirtualOrder) error {
-	fmt.Println(entity)
-	_, err := pool.Exec(ctx, `
+func InsertOrder(ctx context.Context, db _interface.DB, entity model.TbVirtualOrder) (int64, error) {
+	var orderID int64
+	err := db.QueryRow(ctx, `
 	INSERT INTO tb_virtual_order (
 	 user_id, account_id, stk_cd, market, side, order_type, 
 	 time_in_force, price, qty, filled_qty, remaining_qty, status, 
@@ -20,6 +19,7 @@ func InsertOrderLog(ctx context.Context, pool *pgxpool.Pool, entity model.TbVirt
         $6, $7, $8, $9,
         $10, $11, $12, $13, $14, NOW(), NOW()   
 	)
+	RETURNING order_id -- order_id 리턴을 위한 코드
 -- 	ON CONFLICT (user_id, account_id, cntr_trde_qty) DO NOTHING
 `,
 		entity.UserID,
@@ -36,11 +36,12 @@ func InsertOrderLog(ctx context.Context, pool *pgxpool.Pool, entity model.TbVirt
 		entity.Status,
 		entity.ClientOrderID,
 		entity.Reason,
-	)
+	).Scan(&orderID)
+
 	if err != nil {
-		logger.Error("insertOrderLog :: error :: ", err)
-		return err
+		logger.Error("InsertOrder :: error :: ", err)
+		return -1, err
 	}
-	logger.Debug("insertOrderLog :: success :: ", "stk_cd", entity.StkCd)
-	return nil
+	logger.Debug("InsertOrder :: success :: ", "stk_cd", entity.StkCd)
+	return orderID, nil
 }

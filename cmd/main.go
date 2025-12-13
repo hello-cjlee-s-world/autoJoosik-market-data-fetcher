@@ -140,9 +140,22 @@ func main() {
 		}
 		fmt.Println(tradeId)
 
+		virtualAssetEntity := model.TbVirtualAssetEntity{
+			UserId:       0,
+			AccountId:    0,
+			StkCd:        stkCd,
+			Market:       "KOSPI",
+			PositionSide: "B",
+			Qty:          qty,
+			AvgPrice:     price,
+			Status:       "ACTIVE",
+		}
+
+		err = repository.InsertVirtualAsset(ctx, tx, virtualAssetEntity)
+
 		// 트랜잭션으로 묶어서 commit
 		if err := tx.Commit(ctx); err != nil {
-
+			logger.Error("매수하다가 오류났다 오류.")
 		}
 
 	}

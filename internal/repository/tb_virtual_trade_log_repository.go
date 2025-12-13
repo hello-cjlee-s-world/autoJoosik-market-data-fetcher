@@ -2,12 +2,11 @@ package repository
 
 import (
 	"autoJoosik-market-data-fetcher/internal/model"
-	_interface "autoJoosik-market-data-fetcher/internal/repository/interface"
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"context"
 )
 
-func InsertTradeLog(ctx context.Context, db _interface.DB, entity model.TbVirtualTradeLog) (int64, error) {
+func InsertTradeLog(ctx context.Context, db DB, entity model.TbVirtualTradeLog) (int64, error) {
 	var tradeId int64
 	err := db.QueryRow(ctx, `
 	INSERT INTO tb_virtual_trade_log (

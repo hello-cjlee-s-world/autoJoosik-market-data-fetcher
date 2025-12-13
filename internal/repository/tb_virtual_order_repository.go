@@ -2,12 +2,11 @@ package repository
 
 import (
 	"autoJoosik-market-data-fetcher/internal/model"
-	_interface "autoJoosik-market-data-fetcher/internal/repository/interface"
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"context"
 )
 
-func InsertOrder(ctx context.Context, db _interface.DB, entity model.TbVirtualOrder) (int64, error) {
+func InsertOrder(ctx context.Context, db DB, entity model.TbVirtualOrder) (int64, error) {
 	var orderID int64
 	err := db.QueryRow(ctx, `
 	INSERT INTO tb_virtual_order (

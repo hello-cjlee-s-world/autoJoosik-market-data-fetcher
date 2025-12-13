@@ -350,8 +350,10 @@ CREATE TABLE tb_virtual_asset ( --가상자산 테이블
                                   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 -- 한 계좌에서 같은 종목 + 같은 방향 포지션은 하나만 존재
-CREATE UNIQUE INDEX uq_asset_account_stkcd_side
-    ON tb_virtual_asset (account_id, stk_cd, position_side);
+-- CREATE UNIQUE INDEX uq_asset_account_stkcd_side
+--     ON tb_virtual_asset (account_id, stk_cd, position_side);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_virtual_asset
+    ON tb_virtual_asset (account_id, stk_cd, market, position_side);
 
 
 

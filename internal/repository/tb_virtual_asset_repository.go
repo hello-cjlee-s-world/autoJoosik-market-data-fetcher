@@ -7,7 +7,7 @@ import (
 )
 
 func InsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetEntity) error {
-	err := db.QueryRow(ctx, `
+	_, err := db.Exec(ctx, `
 		INSERT INTO tb_virtual_asset (
 		  user_id, account_id, stk_cd, market, position_side,
 		  qty, available_qty, avg_price, last_price,
@@ -61,7 +61,7 @@ func InsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetE
 		entity.Qty,
 		entity.AvgPrice,
 		entity.Status,
-	).Scan()
+	)
 	if err != nil {
 		logger.Error("InsertVirtualAsset :: error :: ", err)
 		return err

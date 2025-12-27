@@ -66,6 +66,6 @@ func InsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetE
 		logger.Error("InsertVirtualAsset :: error :: ", err)
 		return err
 	}
-	logger.Debug("InsertTradeLog :: success :: ", "stk_cd", entity.StkCd)
+	logger.Debug("InsertVirtualAsset :: success :: ", "stk_cd", entity.StkCd)
 	return nil
 }

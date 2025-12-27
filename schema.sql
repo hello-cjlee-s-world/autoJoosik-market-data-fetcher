@@ -378,7 +378,9 @@ CREATE TABLE tb_virtual_account ( -- 가상 계좌 테이블
                                     created_at       TIMESTAMPTZ DEFAULT NOW(),
                                     updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
-
+INSERT INTO tb_virtual_account VALUES(
+       0, 0, 'test_account_1', 1000000, 0, 1000000, 0, 0, 1000000, 0, 'ACTIVE', now(), now()
+);
 -- 유저 하나가 여러 가상 계좌를 가질 수 있음 → 이름 중복 방지
 CREATE UNIQUE INDEX uq_virtual_account_user_name
     ON tb_virtual_account (user_id, account_name);

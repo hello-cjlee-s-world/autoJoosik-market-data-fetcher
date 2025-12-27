@@ -77,7 +77,7 @@ func main() {
 	stkCd := "005930"
 	rst, err := kiwoomApi.GetOrderBookLog(stkCd)
 	if err == nil {
-		// 트랜잭션으로 묶기
+		//  주식 거래 예시 트랜잭션으로 묶기
 		ctx := context.Background()
 		pool := datasource.GetPool()
 		tx, err := pool.Begin(ctx)
@@ -140,6 +140,7 @@ func main() {
 		}
 		fmt.Println(tradeId)
 
+		// 가상 자산 테이블 에 upsert
 		virtualAssetEntity := model.TbVirtualAssetEntity{
 			UserId:       0,
 			AccountId:    0,
@@ -150,9 +151,16 @@ func main() {
 			AvgPrice:     price,
 			Status:       "ACTIVE",
 		}
-
 		err = repository.InsertVirtualAsset(ctx, tx, virtualAssetEntity)
+		if err != nil {
+			fmt.Println("InsertVirtualAsset", err.Error())
+		}
 
+		// 가상 계좌 테이블 거래 가능 금액 조정
+		virtualAccountEntity := model.TbVirtualAccountEntity{
+			AccountId: 0,
+		}
+		err = repository.UpdateVirtualAccount(ctx, tx, virtualAccountEntity, "BUY", int64(price*qty))
 		// 트랜잭션으로 묶어서 commit
 		if err := tx.Commit(ctx); err != nil {
 			logger.Error("매수하다가 오류났다 오류.")

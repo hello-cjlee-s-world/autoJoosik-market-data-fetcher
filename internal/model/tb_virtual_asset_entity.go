@@ -18,6 +18,7 @@ type TbVirtualAssetEntity struct {
 	AvailableQty   float64   `db:"available_qty" json:"available_qty"`
 	AvgPrice       float64   `db:"avg_price" json:"avg_price"`
 	LastPrice      float64   `db:"last_price" json:"last_price"`
+	HighestPrice   float64   `db:"highest_price" json:"highest_price"`
 	InvestedAmount float64   `db:"invested_amount" json:"invested_amount"`
 	EvalAmount     float64   `db:"eval_amount" json:"eval_amount"`
 	EvalPl         float64   `db:"eval_pl" json:"eval_pl"`

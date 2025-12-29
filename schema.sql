@@ -334,6 +334,7 @@ CREATE TABLE tb_virtual_asset ( --가상자산 테이블
 
                                   avg_price        NUMERIC(18,2) NOT NULL,             -- 평균 매입단가
                                   last_price       NUMERIC(18,2),                      -- 최근 평가 기준 가격
+                                  highest_price       NUMERIC(18,2),                   -- 매수 이후 최고가
 
                                   invested_amount  NUMERIC(18,2) NOT NULL,             -- 총 매입금액
                                   eval_amount      NUMERIC(18,2),                      -- 평가금액

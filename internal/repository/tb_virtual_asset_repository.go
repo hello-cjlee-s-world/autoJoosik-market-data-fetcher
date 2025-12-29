@@ -4,21 +4,20 @@ import (
 	"autoJoosik-market-data-fetcher/internal/model"
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"context"
-	"time"
 )
 
 func UpsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetEntity) error {
 	_, err := db.Exec(ctx, `
 		INSERT INTO tb_virtual_asset (
 		  user_id, account_id, stk_cd, market, position_side,
-		  qty, available_qty, avg_price, last_price,
+		  qty, available_qty, avg_price, last_price, highest_price,
 		  invested_amount,
 		  today_buy_qty, today_sell_qty,
 		  status, last_eval_at,
 		  created_at, updated_at
 		) VALUES (
 		  $1, $2, $3, $4, $7::text,
-		  $5, $5, $6, $6,
+		  $5, $5, $6, $6, $6,
 		  ($5::numeric * $6::numeric),
 		  CASE WHEN $7::text = 'B' THEN $5 ELSE 0 END,
 		  CASE WHEN $7::text = 'S' THEN $5 ELSE 0 END,
@@ -50,6 +49,15 @@ func UpsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetE
 		  END,
 
 		  last_price = EXCLUDED.last_price,
+		     
+		  highest_price = CASE
+		     WHEN $7::text = 'B'
+			  AND tb_virtual_asset.highest_price < EXCLUDED.avg_price
+			   THEN EXCLUDED.avg_price
+		     WHEN $7::text = 'S'
+		       THEN tb_virtual_asset.highest_price
+		    END,
+			 
 
 		  invested_amount = CASE
 			WHEN $7::text = 'B' THEN tb_virtual_asset.invested_amount + EXCLUDED.invested_amount
@@ -84,10 +92,8 @@ func UpsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetE
 func GetAvailableAssetsByAccountAndStkCd(ctx context.Context, db DB, accountId int64, stkCd string,
 ) (float64, error) {
 	var availableQty float64
-	ctx2, cancel := context.WithTimeout(ctx, 3*time.Second)
-	defer cancel()
 
-	err := db.QueryRow(ctx2, `
+	err := db.QueryRow(ctx, `
 		SELECT available_qty
 		FROM tb_virtual_asset
 		WHERE account_id = $1
@@ -99,11 +105,48 @@ func GetAvailableAssetsByAccountAndStkCd(ctx context.Context, db DB, accountId i
 			"GetAvailableAssetsByAccountAndStkCd :: error",
 			"accountId", accountId,
 			"stkCd", stkCd,
-			"err", err,
+			"err", err.Error(),
 		)
 		return 0, err
 	}
 	logger.Debug("GetAvailableAssets... ok", "accountId", accountId, "stkCd", stkCd, "availableQty", availableQty)
 
 	return availableQty, nil
+}
+
+func GetHoldingPositions(ctx context.Context, db DB, accountId int64) ([]model.HoldingPosition, error) {
+	var virtualAssetEntities []model.TbVirtualAssetEntity
+	var holdingPositions []model.HoldingPosition
+
+	err := db.QueryRow(ctx, `
+	SELECT * 
+	FROM tb_virtual_asset
+	WHERE account_id = $1
+`, accountId).Scan(&virtualAssetEntities)
+
+	if err != nil {
+		logger.Error("GetHoldingPositions :: error :: " + err.Error())
+	}
+
+	if virtualAssetEntities != nil && len(virtualAssetEntities) > 0 {
+		for _, virtualAssetEntity := range virtualAssetEntities {
+			var position = model.HoldingPosition{
+				AccountId:    virtualAssetEntity.AccountId,
+				UserId:       virtualAssetEntity.UserId,
+				StkCd:        virtualAssetEntity.StkCd,
+				Market:       virtualAssetEntity.Market,
+				Qty:          virtualAssetEntity.Qty,
+				AvailableQty: virtualAssetEntity.AvailableQty,
+				AvgPrice:     virtualAssetEntity.AvgPrice,
+				LastPrice:    virtualAssetEntity.LastPrice,
+				HighestPrice: virtualAssetEntity.HighestPrice,
+				InvestedAmt:  virtualAssetEntity.InvestedAmount,
+				CreatedAt:    virtualAssetEntity.CreatedAt,
+				UpdatedAt:    virtualAssetEntity.UpdatedAt,
+			}
+			holdingPositions = append(holdingPositions, position)
+		}
+	}
+
+	return holdingPositions, nil
 }

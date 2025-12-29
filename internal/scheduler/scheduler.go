@@ -2,8 +2,12 @@
 package scheduler
 
 import (
+	"autoJoosik-market-data-fetcher/internal/kiwoomApi"
+	"autoJoosik-market-data-fetcher/internal/model"
+	"autoJoosik-market-data-fetcher/internal/repository"
 	"context"
 	"errors"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -151,5 +155,74 @@ func parseEverySpec(s string) (int, string, error) {
 		return n, unit, nil
 	default:
 		return 0, "", errors.New("invalid every unit (use s/m/h): " + unit)
+	}
+}
+
+func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
+	// 실제 업무 함수들 등록 (task_type -> 함수). 필요 시 pool 캡쳐해서 사용
+	reg := Registry{
+		"GetTradeInfoLog": func(ctx context.Context) error {
+			stkCd := "005930"
+			rst, err := kiwoomApi.GetTradeInfoLog(stkCd)
+			if err != nil {
+				return err
+			}
+			entList := model.ToTradeInfoLogEntity(rst, stkCd)
+			err = repository.UpsertTradeInfoBatch(ctx, pool, entList)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+		"UpsertStockInfo": func(ctx context.Context) error {
+			stkCd := "005930"
+			rst, err := kiwoomApi.GetStockInfo(stkCd)
+			if err != nil {
+				return err
+			}
+			ent := model.ToStockInfoEntity(rst)
+			err = repository.UpsertStockInfo(ctx, pool, ent)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+		"SellOrBuy": func(ctx context.Context) error {
+			stkCd := "005930"
+			rst, err := kiwoomApi.GetStockInfo(stkCd)
+			if err != nil {
+				return err
+			}
+			ent := model.ToStockInfoEntity(rst)
+			err = repository.UpsertStockInfo(ctx, pool, ent)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+	}
+
+	// 러너 생성 & 시작
+	r := NewRunner(pool, reg)
+	if err := r.Start(ctx); err != nil {
+		log.Fatal("scheduler start:", err)
+	}
+	log.Println("[scheduler] started")
+
+	// (옵션) 주기적 리로드: schedule_info 변경 반영
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			r.Stop()
+			log.Println("[scheduler] stopped")
+			return
+		case <-ticker.C:
+			if err := r.Reload(ctx); err != nil {
+				log.Println("[scheduler] reload error:", err)
+			}
+		}
 	}
 }

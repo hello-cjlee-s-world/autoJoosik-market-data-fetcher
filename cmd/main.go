@@ -3,20 +3,13 @@ package main
 import (
 	"autoJoosik-market-data-fetcher/internal/datasource"
 	"autoJoosik-market-data-fetcher/internal/kiwoomApi"
-	"autoJoosik-market-data-fetcher/internal/model"
-	"autoJoosik-market-data-fetcher/internal/repository"
 	"autoJoosik-market-data-fetcher/internal/scheduler"
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"autoJoosik-market-data-fetcher/pkg/properties"
 	"context"
 	"fmt"
 	"github.com/alexflint/go-arg"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"log"
-	"math/rand"
-	"strconv"
 	"sync"
-	"time"
 )
 
 type Args struct {
@@ -73,179 +66,6 @@ func main() {
 		SecretKey: props.KiwoomApi.SecretKey,
 	})
 
-	// 주식 체결 로직
-	stkCd := "005930"
-	rst, err := kiwoomApi.GetOrderBookLog(stkCd)
-	if err == nil {
-		//  주식 거래 예시 트랜잭션으로 묶기
-		ctx := context.Background()
-		pool := datasource.GetPool()
-		tx, err := pool.Begin(ctx)
-
-		orderBookEntity := model.ToOrderBookLogEntity(rst)
-
-		price, _ := strconv.ParseFloat(orderBookEntity.SelFprBid, 64)
-		//remainingQty, _ := strconv.ParseFloat(orderBookEntity.SelFprReq, 64)
-
-		// 주문 정보(상태) insert
-		qty := 1.0          // 내가 사고 싶은 수량
-		remainingQty := 0.0 // 내 주문 기준 남은 수량
-		userId := int64(0)
-		accountID := int64(0)
-		clientOrderID := fmt.Sprintf("%d_%d_%d",
-			accountID,
-			time.Now().UnixNano(),
-			rand.Intn(1000),
-		) // 유니크한 주문 아이디
-		virtualOrderEntity := model.TbVirtualOrder{
-			UserID:       userId,
-			AccountID:    accountID,
-			StkCd:        stkCd,
-			Market:       "KOSPI",
-			Side:         "B",
-			OrderType:    "MARKET",
-			TimeInForce:  "DAY",
-			Price:        price,
-			Qty:          qty,
-			FilledQty:    qty,
-			RemainingQty: remainingQty,
-			Status:       "FILLED", //'NEW','OPEN','PARTIAL','FILLED','CANCELED','REJECTED'
-
-			ClientOrderID: clientOrderID, // 클라이언트에서 부여하는 주문 ID (선택)
-			Reason:        "",            //-- 거절/취소 사유 등 (옵션)
-		}
-		orderId, err := repository.InsertOrder(ctx, tx, virtualOrderEntity)
-		if err != nil {
-			fmt.Println("InsertOrderLog", err.Error())
-		}
-
-		// 거래 로그 insert(원래는 주문 체결 후 insert 지만 가상이라 바로 체결함에 따라 바로 insert)
-		virtualTradeLogEntity := model.TbVirtualTradeLog{
-			OrderID:      orderId,
-			UserID:       0,
-			AccountID:    0,
-			StkCd:        stkCd,
-			Market:       "KOSPI",
-			Side:         "B",
-			FilledQty:    qty,
-			FilledPrice:  price,
-			FilledAmount: qty * price,
-			FeeAmount:    0.1,
-			TaxAmount:    0.1,
-		}
-
-		tradeId, err := repository.InsertTradeLog(ctx, tx, virtualTradeLogEntity)
-		if err != nil {
-			fmt.Println("InsertTradeLog", err.Error())
-		}
-		fmt.Println(tradeId)
-
-		// 가상 자산 테이블 에 upsert
-		virtualAssetEntity := model.TbVirtualAssetEntity{
-			UserId:       0,
-			AccountId:    0,
-			StkCd:        stkCd,
-			Market:       "KOSPI",
-			PositionSide: "B",
-			Qty:          qty,
-			AvgPrice:     price,
-			Status:       "ACTIVE",
-		}
-		err = repository.InsertVirtualAsset(ctx, tx, virtualAssetEntity)
-		if err != nil {
-			fmt.Println("InsertVirtualAsset", err.Error())
-		}
-
-		// 가상 계좌 테이블 거래 가능 금액 조정
-		virtualAccountEntity := model.TbVirtualAccountEntity{
-			AccountId: 0,
-		}
-		err = repository.UpdateVirtualAccount(ctx, tx, virtualAccountEntity, "BUY", int64(price*qty))
-		// 트랜잭션으로 묶어서 commit
-		if err := tx.Commit(ctx); err != nil {
-			logger.Error("매수하다가 오류났다 오류.")
-		}
-
-	}
-
-	rst, err = kiwoomApi.GetTradeInfoLog(stkCd)
-	if err == nil {
-		fmt.Println("GetTradeInfoLog", rst)
-		err = repository.UpsertTradeInfoBatch(context.Background(), datasource.GetPool(), model.ToTradeInfoLogEntity(rst, stkCd))
-		if err != nil {
-			fmt.Println("UpsertTradeInfoBatch", err.Error())
-		}
-	}
-
 	// scheduler 초기화
-	getSchedule(context.Background(), datasource.GetPool())
-}
-
-func getSchedule(ctx context.Context, pool *pgxpool.Pool) {
-	// 실제 업무 함수들 등록 (task_type -> 함수). 필요 시 pool 캡쳐해서 사용
-	reg := scheduler.Registry{
-		"GetTradeInfoLog": func(ctx context.Context) error {
-			stkCd := "005930"
-			rst, err := kiwoomApi.GetTradeInfoLog(stkCd)
-			if err != nil {
-				return err
-			}
-			entList := model.ToTradeInfoLogEntity(rst, stkCd)
-			err = repository.UpsertTradeInfoBatch(ctx, pool, entList)
-			if err != nil {
-				return err
-			}
-			return nil
-		},
-		"UpsertStockInfo": func(ctx context.Context) error {
-			stkCd := "005930"
-			rst, err := kiwoomApi.GetStockInfo(stkCd)
-			if err != nil {
-				return err
-			}
-			ent := model.ToStockInfoEntity(rst)
-			err = repository.UpsertStockInfo(ctx, pool, ent)
-			if err != nil {
-				return err
-			}
-			return nil
-		},
-		"SellOrBuy": func(ctx context.Context) error {
-			stkCd := "005930"
-			rst, err := kiwoomApi.GetStockInfo(stkCd)
-			if err != nil {
-				return err
-			}
-			ent := model.ToStockInfoEntity(rst)
-			err = repository.UpsertStockInfo(ctx, pool, ent)
-			if err != nil {
-				return err
-			}
-			return nil
-		},
-	}
-
-	// 러너 생성 & 시작
-	r := scheduler.NewRunner(pool, reg)
-	if err := r.Start(ctx); err != nil {
-		log.Fatal("scheduler start:", err)
-	}
-	log.Println("[scheduler] started")
-
-	// (옵션) 주기적 리로드: schedule_info 변경 반영
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			r.Stop()
-			log.Println("[scheduler] stopped")
-			return
-		case <-ticker.C:
-			if err := r.Reload(ctx); err != nil {
-				log.Println("[scheduler] reload error:", err)
-			}
-		}
-	}
+	scheduler.GetSchedule(context.Background(), datasource.GetPool())
 }

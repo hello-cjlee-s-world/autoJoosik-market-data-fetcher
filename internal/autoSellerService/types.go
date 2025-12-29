@@ -3,7 +3,10 @@ package autoSellerService
 import "time"
 
 type MarketState struct {
-	IsBull      bool    // 상승장 판단
+	IsBull      bool // 상승장 판단
+	IsBear      bool
+	IndexChange float64
+	Reason      string
 	Volatility  float64 // 변동성
 	IsEmergency bool    // 급변 여부
 }
@@ -32,4 +35,15 @@ type BuyConstraints struct {
 type DecisionResult struct {
 	Do     bool
 	Reason string
+}
+
+type Candidate struct {
+	StkCd               string
+	CurrentPrice        float64
+	Score               float64
+	LastPrice           float64
+	AlreadyHolding      bool
+	LastBuyTime         time.Time
+	DailyBuyCount       int
+	CurrentHoldingCount int
 }

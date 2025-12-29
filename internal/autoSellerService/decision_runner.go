@@ -1,6 +1,7 @@
 package autoSellerService
 
 import (
+	"autoJoosik-market-data-fetcher/internal/model"
 	"context"
 	"time"
 
@@ -12,15 +13,7 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 	decisionMutex.Lock()
 	defer decisionMutex.Unlock()
 
-	accountId := int64(0)
-
-	// 1️ 시장 상태
-	market, err := repository.GetMarketState(ctx, pool)
-	if err != nil {
-		return err
-	}
-
-	// 2️ 보유 종목 조회
+	// 2보유 종목 조회
 	positions, err := repository.GetHoldingPositions(ctx, pool, 0)
 	if err != nil {
 		return err
@@ -31,7 +24,6 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 		currentPrice := p.LastPrice
 
 		sell := ShouldSell(
-			market,
 			Position{
 				StkCd:        p.StkCd,
 				Qty:          p.Qty,
@@ -47,17 +39,28 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 
 		if sell.Do {
 			logger.Info("Sell decision", "stkCd", p.StkCd, "reason", sell.Reason)
-			return ExecuteSell(ctx, pool, p, sell.Reason)
+			Sell(p.StkCd, p.Qty)
 		}
 	}
 
 	// ===== 매수 =====
-	candidates, err := repository.GetBuyCandidates(ctx, pool)
+	//candidates, err := repository.GetBuyCandidates(ctx, pool)
+	var candidates []Candidate
 	if err != nil {
 		return err
 	}
 
 	for _, c := range candidates {
+		var bullBear = model.BullBearEntity{}
+		var market = MarketState{}
+		bullBear, err = repository.GetBullBearValue(ctx, pool, c.StkCd)
+		market = repository.BuildMarketState(bullBear.R1, bullBear.R2, bullBear.R3, bullBear.Volatility)
+		if err != nil {
+			return err
+		} else {
+
+		}
+
 		buy := ShouldBuy(
 			time.Now(),
 			market,

@@ -1,7 +1,6 @@
 package autoSellerService
 
 func ShouldSell(
-	market MarketState,
 	position Position,
 	currentPrice float64,
 	stopLossRate float64, // 예: -1.5

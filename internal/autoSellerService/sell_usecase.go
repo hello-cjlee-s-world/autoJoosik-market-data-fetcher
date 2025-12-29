@@ -13,21 +13,32 @@ import (
 	"time"
 )
 
-func Buy(stkCd string) {
+func Sell(stkCd string, qty float64) {
 	rst, err := kiwoomApi.GetOrderBookLog(stkCd)
 	if err == nil {
 		//  주식 거래 예시 트랜잭션으로 묶기
 		ctx := context.Background()
 		pool := datasource.GetPool()
-		tx, err := pool.Begin(ctx)
+		tx, _ := pool.Begin(ctx)
 
 		orderBookEntity := model.ToOrderBookLogEntity(rst)
 
-		price, _ := strconv.ParseFloat(orderBookEntity.SelFprBid, 64)
-		//remainingQty, _ := strconv.ParseFloat(orderBookEntity.SelFprReq, 64)
+		// 계좌 내 거래 가능 수량
+		availableQty, err := repository.GetAvailableAssetsByAccountAndStkCd(ctx, tx, 0, stkCd)
+		if err != nil {
+			logger.Error("Sell :: error :: stkCd" + stkCd + " " + err.Error())
+		}
+		if availableQty <= 0 {
+			logger.Info("Sell :: 거래 가능한 수량이 없습니다.")
+			return
+		} else if availableQty < qty && availableQty > 0 {
+			qty = availableQty
+			logger.Info("Sell :: 매도 가능 수량 부족, 가능한 수량만 매도합니다.")
+		}
+
+		price, _ := strconv.ParseFloat(orderBookEntity.BuyFprBid, 64)
 
 		// !!insert 주문 정보(상태)
-		qty := 1.0          // 내가 사고 싶은 수량
 		remainingQty := 0.0 // 내 주문 기준 남은 수량
 		userId := int64(0)
 		accountID := int64(0)
@@ -35,14 +46,14 @@ func Buy(stkCd string) {
 			accountID,
 			time.Now().UnixNano(),
 			rand.Intn(1000),
-			"buy",
+			"sell",
 		) // 유니크한 주문 아이디
 		virtualOrderEntity := model.TbVirtualOrder{
 			UserID:       userId,
 			AccountID:    accountID,
 			StkCd:        stkCd,
 			Market:       "KOSPI",
-			Side:         "B",
+			Side:         "A",
 			OrderType:    "MARKET",
 			TimeInForce:  "DAY",
 			Price:        price,
@@ -66,7 +77,7 @@ func Buy(stkCd string) {
 			AccountID:    0,
 			StkCd:        stkCd,
 			Market:       "KOSPI",
-			Side:         "B",
+			Side:         "S",
 			FilledQty:    qty,
 			FilledPrice:  price,
 			FilledAmount: qty * price,
@@ -78,13 +89,14 @@ func Buy(stkCd string) {
 		if err != nil {
 			fmt.Println("InsertTradeLog", err.Error())
 		}
+
 		// !!upsert 가상 자산 테이블 에
 		virtualAssetEntity := model.TbVirtualAssetEntity{
 			UserId:       0,
 			AccountId:    0,
 			StkCd:        stkCd,
 			Market:       "KOSPI",
-			PositionSide: "B",
+			PositionSide: "S",
 			Qty:          qty,
 			AvgPrice:     price,
 			Status:       "ACTIVE",
@@ -98,13 +110,12 @@ func Buy(stkCd string) {
 		virtualAccountEntity := model.TbVirtualAccountEntity{
 			AccountId: 0,
 		}
-		err = repository.UpdateVirtualAccount(ctx, tx, virtualAccountEntity, "BUY", int64(price*qty))
+		err = repository.UpdateVirtualAccount(ctx, tx, virtualAccountEntity, "SELL", int64(price*qty))
 		// 트랜잭션으로 묶어서 commit
 		if err := tx.Commit(ctx); err != nil {
-			logger.Error("Buy :: 매수 도중 오류 발생")
+			logger.Error("Sell :: error ::" + err.Error())
 		} else {
-			logger.Info("Buy :: 매수 성공, stkCd=" + stkCd)
+			logger.Info("Sell :: success :: accountId=" + fmt.Sprintf(strconv.FormatInt(accountID, 10)) + ", stkCd=" + stkCd)
 		}
-
 	}
 }

@@ -1,7 +1,6 @@
 package kiwoomApi
 
 import (
-	"autoJoosik-market-data-fetcher/internal/model"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -34,21 +33,21 @@ func KiwoomInit(kiwoomConfig KiwoomConfig) {
 		err = json.Unmarshal([]byte(token), &tokenObj)
 		if err != nil {
 			kwConfig.Token = tokenObj["token"]
-			rst, err := GetStockInfo("005930")
-			if err != nil {
-				fmt.Println("결과값 test 실패 ::", rst)
-				return
-			} else {
-				fmt.Println("결과값 test :: " + rst)
-			}
+			//rst, err := GetStockInfo("005930")
+			//if err != nil {
+			//	fmt.Println("결과값 test 실패 ::", rst)
+			//	return
+			//} else {
+			//	fmt.Println("결과값 test :: " + rst)
+			//}
 
-			rst, err = GetOrderBookLog("005930")
-			if err != nil {
-				fmt.Println("결과값 test 실패 ::", rst)
-				return
-			} else {
-				_ = model.ToOrderBookLogEntity(rst)
-			}
+			//rst, err = GetOrderBookLog("005930")
+			//if err != nil {
+			//	fmt.Println("결과값 test 실패 ::", rst)
+			//	return
+			//} else {
+			//	_ = model.ToOrderBookLogEntity(rst)
+			//}
 
 		}
 

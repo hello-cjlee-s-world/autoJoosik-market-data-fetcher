@@ -1,10 +1,31 @@
 DROP TABLE stock_info;
 DROP TABLE trade_info_log;
 DROP TABLE orderbook_log;
-DROP TABLE stock_daily_log
-DROP TABLE stock_tick_log
-DROP TABLE account_profit_log
-DROP TABLE atn_stk_infr
+DROP TABLE stock_daily_log;
+DROP TABLE stock_tick_log;
+DROP TABLE account_profit_log;
+DROP TABLE atn_stk_infr;
+DROP TABLE schedule_info;
+DROP TABLE tb_virtual_asset;
+DROP TABLE tb_virtual_account;
+DROP TABLE tb_virtual_account;
+DROP TABLE tb_virtual_order;
+DROP TABLE tb_virtual_trade_log;
+
+DROP INDEX IF EXISTS idx_trade_info_log_tm;
+DROP INDEX IF EXISTS idx_trade_info_log_stextp;
+DROP INDEX IF EXISTS idx_trade_info_log_created_at;
+DROP INDEX IF EXISTS idx_orderbook_log_tm;
+DROP INDEX IF EXISTS idx_orderbook_log_created_at;
+DROP INDEX IF EXISTS idx_stock_daily_log_cd_date;
+DROP INDEX IF EXISTS idx_stock_tick_log_cd_tm;
+DROP INDEX IF EXISTS idx_account_profit_dt_cd;
+DROP INDEX IF EXISTS uq_virtual_asset;
+DROP INDEX IF EXISTS uq_virtual_account_user_name;
+DROP INDEX IF EXISTS uq_virtual_order_client;
+DROP INDEX IF EXISTS idx_trade_log_order;
+DROP INDEX IF EXISTS idx_trade_log_account_stk;
+
 
     CREATE TABLE stock_info ( --주식기본정보요청
                             stk_cd              VARCHAR(20) PRIMARY KEY,   -- 종목코드
@@ -317,6 +338,9 @@ INSERT INTO public.schedule_info
 (id, "name", schedule, task_type, enabled, created_at)
 VALUES(1, 'trade-info', 'every 10s', 'GetTradeInfoLog', true, '2025-09-05 17:04:14.463');
 
+INSERT INTO public.schedule_info
+(id, "name", schedule, task_type, enabled, created_at)
+VALUES(2, 'stock-info', 'every 3s', 'UpsertStockInfo', true, '2025-09-10 14:54:06.291');
 
 CREATE TABLE tb_virtual_asset ( --가상자산 테이블
                                   asset_id         BIGSERIAL PRIMARY KEY,              -- 포지션 고유 ID
@@ -449,4 +473,41 @@ CREATE INDEX idx_trade_log_order
 -- 계좌, 종목 기준 체결 조회용 인덱스 (옵션)
 CREATE INDEX idx_trade_log_account_stk
     ON tb_virtual_trade_log (account_id, stk_cd, created_at);
+
+
+
+CREATE TABLE IF NOT EXISTS tb_stock_score (
+    stk_cd            varchar(20) PRIMARY KEY,   -- 종목코드 (ex: 005930)
+
+-- 총점 + 구성점수
+    score_total       numeric(9,4)  NOT NULL,    -- 최종 점수 (0~100 권장)
+    score_fundamental numeric(9,4)  DEFAULT 0,   -- 기업(재무) 점수
+    score_momentum    numeric(9,4)  DEFAULT 0,   -- 모멘텀 점수
+    score_market      numeric(9,4)  DEFAULT 0,   -- (선택) 시장/섹터 점수
+    score_risk        numeric(9,4)  DEFAULT 0,   -- (감점) 리스크 점수(변동성 등)
+
+-- 판단 근거로 남길 지표들(나중에 디버깅/튜닝할 때 필수)
+    last_price        numeric(18,4),
+    r1                numeric(18,8),             -- 최근 1틱 수익률(%)
+    r2                numeric(18,8),             -- 최근 10틱 수익률(%)
+    r3                numeric(18,8),             -- 최근 30틱 수익률(%)
+    volatility        numeric(18,8),             -- stddev_pop(returns) (%)
+
+-- 스코어 산정 시점 (이 시점 데이터로 계산했다)
+    asof_tm           timestamptz NOT NULL DEFAULT now(),
+
+    -- 설명/디버깅용 (어떤 규칙이 적용됐는지)
+    meta              jsonb        DEFAULT '{}'::jsonb,
+
+    created_at        timestamptz NOT NULL DEFAULT now(),
+    updated_at        timestamptz NOT NULL DEFAULT now()
+    );
+
+-- 조회 성능용 인덱스 (점수 상위 N개 뽑을 때)
+CREATE INDEX IF NOT EXISTS ix_stock_score_total
+    ON tb_stocks_core (score_total DESC);
+
+-- 최신 업데이트 순으로 보기 좋게
+CREATE INDEX IF NOT EXISTS ix_stock_score_updated
+    ON tb_stock_score (updated_at DESC);
 

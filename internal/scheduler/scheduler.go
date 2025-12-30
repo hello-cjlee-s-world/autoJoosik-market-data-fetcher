@@ -1,13 +1,16 @@
-// pkg/scheduler/scheduler.go
 package scheduler
 
 import (
 	"autoJoosik-market-data-fetcher/internal/kiwoomApi"
 	"autoJoosik-market-data-fetcher/internal/model"
 	"autoJoosik-market-data-fetcher/internal/repository"
+	"autoJoosik-market-data-fetcher/internal/utils"
+	"autoJoosik-market-data-fetcher/pkg/logger"
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -187,8 +190,23 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 			}
 			return nil
 		},
-		"SellOrBuy": func(ctx context.Context) error {
-			return DecideAndExecute(ctx, pool)
+		//"SellOrBuy": func(ctx context.Context) error {
+		//	return DecideAndExecute(ctx, pool)
+		//},
+		"CalStockScore": func(ctx context.Context) error {
+			// 추후 stkCd list 불러와서 for 문 수정
+			stkCd := "005930"
+			bullBearEntity, _ := repository.GetBullBearValue(ctx, pool, stkCd)
+			stockInfoEntity, _ := repository.GetStockFundamental(ctx, pool, stkCd)
+
+			score, _ := calcScoreToEntity(bullBearEntity, stockInfoEntity, stkCd)
+
+			err := repository.UpsertStockScore(ctx, pool, score)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 
@@ -215,4 +233,124 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 			}
 		}
 	}
+}
+
+func calcScoreToEntity(
+	bullEntity model.BullBearEntity, // R1,R2,R3,Volatility,LastPrice 같은 값 있다고 가정
+	infoEntity model.StockInfoEntity, // Per,Pbr,Roe,Eps,ForExhRt,Cap 등이 string으로 들어있다고 가정
+	stkCd string,
+) (model.TbStockScoreEntity, error) {
+	var ent model.TbStockScoreEntity
+	// ===== 모멘텀 점수 =====
+	momentum := 0.0
+	if bullEntity.R1 > 0 {
+		momentum += 10
+	}
+	if bullEntity.R2 > 0 {
+		momentum += 15
+	}
+	if bullEntity.R3 > 0 {
+		momentum += 25
+	}
+
+	// ===== 리스크 감점 =====
+	risk := bullEntity.Volatility * 10
+	risk = math.Min(risk, 30)
+
+	// ===== 재무 점수 =====
+	per, err := utils.ParseSignedFloat(infoEntity.Per)
+	if err != nil {
+		return model.TbStockScoreEntity{}, err
+	}
+
+	pbr, err := utils.ParseSignedFloat(infoEntity.Pbr)
+	if err != nil {
+		return model.TbStockScoreEntity{}, err
+	}
+
+	roe, err := utils.ParseSignedFloat(infoEntity.Roe)
+	if err != nil {
+		return model.TbStockScoreEntity{}, err
+	}
+
+	eps, err := utils.ParseSignedFloat(infoEntity.Eps)
+	if err != nil {
+		return model.TbStockScoreEntity{}, err
+	}
+
+	forExhRt, err := utils.ParseSignedFloat(infoEntity.ForExhRt)
+	if err != nil {
+		return model.TbStockScoreEntity{}, err
+	}
+
+	capVal, err := utils.ParseSignedFloat(infoEntity.Cap)
+	if err != nil {
+		return model.TbStockScoreEntity{}, err
+	}
+
+	lastPrice, err := utils.ParseSignedFloat(infoEntity.CurPrc)
+	if err != nil {
+		return model.TbStockScoreEntity{}, err
+	}
+
+	fund := 0.0
+	if per > 0 && per < 15 {
+		fund += 15
+	}
+	if pbr > 0 && pbr < 1.5 {
+		fund += 10
+	}
+	if roe >= 10 {
+		fund += 10
+	}
+	if eps > 0 {
+		fund += 5
+	}
+	if forExhRt >= 10 {
+		fund += 5
+	}
+	if capVal > 0 && capVal < 1_000_000_000_000 {
+		fund -= 5
+	} // 너무 소형주
+
+	// ===== 최종 점수 =====
+	scoreTotal := fund + momentum - risk
+	scoreTotal = math.Max(0, math.Min(100, scoreTotal))
+
+	now := time.Now()
+
+	metaMap := map[string]any{
+		"per":      infoEntity.Per,
+		"pbr":      infoEntity.Pbr,
+		"roe":      infoEntity.Roe,
+		"eps":      infoEntity.Eps,
+		"forExhRt": infoEntity.ForExhRt,
+		"cap":      infoEntity.Cap,
+	}
+	metaBytes, err := json.Marshal(metaMap)
+	if err != nil {
+		logger.Error("CalcScore :: meta marshal error :: " + err.Error())
+		return ent, err
+	}
+
+	// ===== 엔티티 매핑 =====
+	ent = model.TbStockScoreEntity{
+		StkCd:            stkCd, // 또는 bullEntity.StkCd
+		ScoreTotal:       scoreTotal,
+		ScoreFundamental: fund,
+		ScoreMomentum:    momentum,
+		ScoreMarket:      0,         // 아직 미사용이면 0
+		ScoreRisk:        risk,      // "감점값" 그대로 저장 (원하면 -risk로 저장해도 됨)
+		LastPrice:        lastPrice, // 없으면 infoEntity.CurPrc 파싱해서 넣어도 됨
+		R1:               bullEntity.R1,
+		R2:               bullEntity.R2,
+		R3:               bullEntity.R3,
+		Volatility:       bullEntity.Volatility,
+		AsofTm:           now,
+		Meta:             string(metaBytes),
+		CreatedAt:        now, // UPSERT면 사실상 Update에서만 의미. Insert 시에만 넣고 싶으면 repo에서 처리해도 됨
+		UpdatedAt:        now,
+	}
+
+	return ent, nil
 }

@@ -477,7 +477,7 @@ CREATE INDEX idx_trade_log_account_stk
 
 
 CREATE TABLE IF NOT EXISTS tb_stock_score (
-                                              stk_cd            varchar(20) PRIMARY KEY,   -- 종목코드 (ex: 005930)
+    stk_cd            varchar(20) PRIMARY KEY,   -- 종목코드 (ex: 005930)
 
 -- 총점 + 구성점수
     score_total       numeric(9,4)  NOT NULL,    -- 최종 점수 (0~100 권장)

@@ -200,3 +200,24 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 	_, err := pool.Exec(ctx, query, valueArgs...)
 	return err
 }
+
+// 기업 점수 계산 위한 컬럼만 select
+func GetStockFundamental(ctx context.Context, pool DB, stkCd string) (model.StockInfoEntity, error) {
+	var entity model.StockInfoEntity
+	err := pool.QueryRow(ctx, `
+SELECT
+  per,
+  roe,
+  pbr,
+  eps,
+  for_exh_rt,
+  cap
+FROM stock_info
+WHERE stk_cd = $1;
+`, stkCd).Scan(&entity.Per, &entity.Roe, &entity.Pbr, &entity.Eps, &entity.ForExhRt, &entity.Cap)
+	if err != nil {
+		logger.Error("GetStockFundamental :: error :: " + err.Error())
+	}
+
+	return entity, nil
+}

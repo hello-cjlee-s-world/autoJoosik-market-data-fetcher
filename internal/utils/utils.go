@@ -36,3 +36,13 @@ func ParseTradeTimestamp(tm string) time.Time {
 	}
 	return t
 }
+
+func ParseSignedFloat(s string) (float64, error) {
+	s = strings.TrimSpace(s)
+	s = strings.ReplaceAll(s, ",", "")
+	s = strings.TrimSuffix(s, "%")
+	if s == "" || s == "--" {
+		return 0, nil
+	}
+	return strconv.ParseFloat(s, 64)
+}

@@ -80,9 +80,11 @@ func UpsertTradeInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 
 	for range entities {
 		if _, err := br.Exec(); err != nil {
+			logger.Error("UpsertTradeInfoBatch :: error :: " + err.Error())
 			return err
 		}
 	}
+	logger.Debug("UpsertStockInfo :: success :: ")
 
 	return br.Close()
 }

@@ -511,3 +511,24 @@ CREATE INDEX IF NOT EXISTS ix_stock_score_total
 CREATE INDEX IF NOT EXISTS ix_stock_score_updated
     ON tb_stock_score (updated_at DESC);
 
+
+-- 종목별 변동성 조회 function
+CREATE OR REPLACE FUNCTION fn_volatility(
+  in_stk_cd text,
+  in_minutes integer DEFAULT 300
+)
+RETURNS numeric
+LANGUAGE sql
+STABLE
+AS $$
+SELECT stddev_pop(ret)::numeric
+FROM (
+         SELECT
+             ((cur_prc - LAG(cur_prc) OVER (ORDER BY tm))
+                  / NULLIF(LAG(cur_prc) OVER (ORDER BY tm), 0) * 100) AS ret
+         FROM trade_info_log
+         WHERE stk_cd = in_stk_cd
+           AND tm >= now() - make_interval(mins => in_minutes)
+     ) t
+WHERE ret IS NOT NULL;
+$$;

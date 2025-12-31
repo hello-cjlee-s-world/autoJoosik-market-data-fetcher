@@ -27,7 +27,7 @@ type databaseStruct struct {
 	Password        string `mapstructure:"password"`
 	Host            string `mapstructure:"host"`
 	Port            int    `mapstructure:"port"`
-	Database        string `mapstructure:"database"`
+	Name            string `mapstructure:"name"`
 	MaxIdleConn     int    `mapstructure:"maxIdleConn"`
 	ConnMaxLifetime int    `mapstructure:"connMaxLifetime"`
 	SSLMode         string `mapstructure:"sslMode"`

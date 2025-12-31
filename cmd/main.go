@@ -54,7 +54,7 @@ func main() {
 			props.Database.Password,
 			props.Database.Host,
 			props.Database.Port,
-			props.Database.Database,
+			props.Database.Name,
 			props.Database.SSLMode,
 		),
 		MaximumPoolSize: props.Database.MaximumPoolSize,

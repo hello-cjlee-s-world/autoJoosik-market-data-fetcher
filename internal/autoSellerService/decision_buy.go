@@ -17,13 +17,13 @@ func ShouldBuy(
 		return DecisionResult{false, "market_emergency"}
 	}
 
-	//if !market.IsBull {
-	//	return DecisionResult{false, "not_bull_market"}
-	//}
+	if !market.IsBull {
+		return DecisionResult{false, "not_bull_market"}
+	}
 
-	//if stock.Score < 70 {
-	//	return DecisionResult{false, "score_too_low"}
-	//}
+	if stock.Score < 70 {
+		return DecisionResult{false, "score_too_low"}
+	}
 
 	if alreadyHolding {
 		// 추가 매수 조건 (단순 예시)

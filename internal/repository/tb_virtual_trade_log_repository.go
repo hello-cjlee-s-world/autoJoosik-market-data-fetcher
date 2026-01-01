@@ -34,7 +34,7 @@ func InsertTradeLog(ctx context.Context, db DB, entity model.TbVirtualTradeLog) 
 	).Scan(&tradeId)
 
 	if err != nil {
-		logger.Error("InsertTradeLog :: error :: ", err)
+		logger.Error("InsertTradeLog :: error :: ", err.Error())
 		return -1, err
 	}
 	logger.Debug("InsertTradeLog :: success :: ", "stk_cd", entity.StkCd)

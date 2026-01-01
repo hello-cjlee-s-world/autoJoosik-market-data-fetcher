@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"autoJoosik-market-data-fetcher/internal/autoSellerService"
 	"autoJoosik-market-data-fetcher/internal/kiwoomApi"
 	"autoJoosik-market-data-fetcher/internal/model"
 	"autoJoosik-market-data-fetcher/internal/repository"
@@ -190,15 +191,14 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 			}
 			return nil
 		},
-		//"SellOrBuy": func(ctx context.Context) error {
-		//	return DecideAndExecute(ctx, pool)
-		//},
+		"SellOrBuy": func(ctx context.Context) error {
+			return autoSellerService.DecideAndExecute(ctx, pool)
+		},
 		"CalStockScore": func(ctx context.Context) error {
 			// 추후 stkCd list 불러와서 for 문 수정
 			stkCd := "005930"
 			bullBearEntity, _ := repository.GetBullBearValue(ctx, pool, stkCd)
 			stockInfoEntity, _ := repository.GetStockFundamental(ctx, pool, stkCd)
-
 			score, _ := calcScoreToEntity(bullBearEntity, stockInfoEntity, stkCd)
 
 			err := repository.UpsertStockScore(ctx, pool, score)
@@ -351,6 +351,6 @@ func calcScoreToEntity(
 		CreatedAt:        now, // UPSERT면 사실상 Update에서만 의미. Insert 시에만 넣고 싶으면 repo에서 처리해도 됨
 		UpdatedAt:        now,
 	}
-
+	logger.Debug("calcScoreToEntity :: Success :: " + ent.StkCd)
 	return ent, nil
 }

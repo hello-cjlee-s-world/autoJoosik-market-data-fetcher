@@ -38,7 +38,7 @@ func InsertOrder(ctx context.Context, db DB, entity model.TbVirtualOrder) (int64
 	).Scan(&orderID)
 
 	if err != nil {
-		logger.Error("InsertOrder :: error :: ", err)
+		logger.Error("InsertOrder :: error :: ", err.Error())
 		return -1, err
 	}
 	logger.Debug("InsertOrder :: success :: ", "stk_cd", entity.StkCd)

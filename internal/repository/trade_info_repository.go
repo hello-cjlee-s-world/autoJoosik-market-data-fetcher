@@ -42,24 +42,3 @@ func GetBullBearValue(ctx context.Context, db DB, stkCd string) (model.BullBearE
 
 	return entity, nil
 }
-
-//
-//func BuildMarketState(r1, r2, r3, vol float64) autoSellerService.MarketState {
-//	state := autoSellerService.MarketState{}
-//
-//	state.IsBull = r1 > 0 && r2 > 0 && r3 > 0
-//	state.IsBear = r1 < 0 && r2 < 0
-//
-//	state.Volatility = vol
-//	state.IndexChange = r1
-//
-//	if math.Abs(r1) >= 2.0 || vol >= 2.5 {
-//		state.IsEmergency = true
-//		state.Reason = "market_shock"
-//	} else {
-//		state.IsEmergency = false
-//		state.Reason = "normal"
-//	}
-//
-//	return state
-//}

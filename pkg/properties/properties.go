@@ -39,12 +39,21 @@ type kiwoomApiStruct struct {
 	SecretKey string `mapstructure:"secretKey"`
 }
 
+//type buyConstraintsStruct struct {
+//MaxHoldingCount      int `mapstructure:"maxHoldingCount"`
+//MaxDailyBuyCount     int `mapstructure:"maxDailyBuyCount"`
+//CooldownAfterBuy     int `mapstructure:"cooldownAfterBuy"`
+//AllowAddBuy          int `mapstructure:"allowAddBuy"`
+//MaxInvestPerStockPct int `mapstructure:"maxInvestPerStockPct"`
+//}
+
 type PropertiesInfo struct {
 	configFile string
 	Server     serverStruct    `mapstructure:"server"`
 	Logging    loggingStruct   `mapstructure:"logging"`
 	Database   databaseStruct  `mapstructure:"database"`
 	KiwoomApi  kiwoomApiStruct `mapstructure:"kiwoomApi"`
+	//BuyConstraints buyConstraintsStruct `mapstructure:"buyConstraints"`
 }
 
 func (p *PropertiesInfo) Init(configFile string) {

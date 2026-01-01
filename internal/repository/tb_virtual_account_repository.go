@@ -57,7 +57,7 @@ WHERE a.account_id = $1
 `
 	_, err = db.Exec(ctx, recalcQ, entity.AccountId)
 	if err != nil {
-		logger.Error("UpdateVirtualAccount :: recalc error :: ", err)
+		logger.Error("UpdateVirtualAccount :: recalc error :: ", err.Error())
 		return err
 	}
 

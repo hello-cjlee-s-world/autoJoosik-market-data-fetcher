@@ -5,25 +5,24 @@ import (
 	"autoJoosik-market-data-fetcher/internal/kiwoomApi"
 	"autoJoosik-market-data-fetcher/internal/model"
 	"autoJoosik-market-data-fetcher/internal/repository"
+	"autoJoosik-market-data-fetcher/internal/utils"
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"context"
 	"fmt"
 	"math/rand"
-	"strconv"
 	"time"
 )
 
-func Buy(stkCd string) {
+func Buy(stkCd string) error {
 	rst, err := kiwoomApi.GetOrderBookLog(stkCd)
 	if err == nil {
 		//  주식 거래 예시 트랜잭션으로 묶기
 		ctx := context.Background()
 		pool := datasource.GetPool()
 		tx, err := pool.Begin(ctx)
-
 		orderBookEntity := model.ToOrderBookLogEntity(rst)
 
-		price, _ := strconv.ParseFloat(orderBookEntity.SelFprBid, 64)
+		price := utils.ParseFloat(orderBookEntity.SelFprBid)
 		//remainingQty, _ := strconv.ParseFloat(orderBookEntity.SelFprReq, 64)
 
 		// !!insert 주문 정보(상태)
@@ -56,7 +55,8 @@ func Buy(stkCd string) {
 		}
 		orderId, err := repository.InsertOrder(ctx, tx, virtualOrderEntity)
 		if err != nil {
-			fmt.Println("InsertOrderLog", err.Error())
+			logger.Error("InsertOrderLog", err.Error())
+			return err
 		}
 
 		// !!insert 거래 로그 (원래는 주문 체결 후 insert 지만 가상이라 바로 체결함에 따라 바로 insert)
@@ -76,7 +76,8 @@ func Buy(stkCd string) {
 
 		_, err = repository.InsertTradeLog(ctx, tx, virtualTradeLogEntity)
 		if err != nil {
-			fmt.Println("InsertTradeLog", err.Error())
+			logger.Error("InsertTradeLog", err.Error())
+			return err
 		}
 		// !!upsert 가상 자산 테이블 에
 		virtualAssetEntity := model.TbVirtualAssetEntity{
@@ -91,7 +92,8 @@ func Buy(stkCd string) {
 		}
 		err = repository.UpsertVirtualAsset(ctx, tx, virtualAssetEntity)
 		if err != nil {
-			fmt.Println("UpsertVirtualAsset", err.Error())
+			logger.Error("UpsertVirtualAsset", err.Error())
+			return err
 		}
 
 		// !!update 가상 계좌 테이블 거래 가능 금액
@@ -102,9 +104,11 @@ func Buy(stkCd string) {
 		// 트랜잭션으로 묶어서 commit
 		if err := tx.Commit(ctx); err != nil {
 			logger.Error("Buy :: 매수 도중 오류 발생")
+			return err
 		} else {
 			logger.Info("Buy :: 매수 성공, stkCd=" + stkCd)
 		}
 
 	}
+	return err
 }

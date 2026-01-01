@@ -52,3 +52,71 @@ func UpsertStockScore(ctx context.Context, db DB, entity model.TbStockScoreEntit
 	}
 	return nil
 }
+
+func GetBuyCandidates(ctx context.Context, db DB, accountId int64) ([]model.CandidateEntity, error) {
+	rows, err := db.Query(ctx, `
+WITH candidates AS (
+  SELECT stk_cd, last_price, score_total
+  FROM tb_stock_score
+  ORDER BY score_total DESC
+  LIMIT 20
+),
+holding AS (
+  SELECT stk_cd, (qty > 0) AS already_holding
+  FROM tb_virtual_asset
+  WHERE account_id = $1
+),
+today_buy AS (
+  SELECT stk_cd, COUNT(*) AS daily_buy_count, MAX(created_at) AS last_buy_time
+  FROM tb_virtual_trade_log
+  WHERE account_id = $1
+    AND side = 'B'
+    AND created_at >= date_trunc('day', now())
+  GROUP BY stk_cd
+),
+holding_cnt AS (
+  SELECT COUNT(*) AS cnt
+  FROM tb_virtual_asset
+  WHERE account_id = $1 AND qty > 0
+)
+SELECT
+  c.stk_cd,
+  c.last_price,
+  c.score_total,
+  COALESCE(h.already_holding, false) AS already_holding,
+  COALESCE(t.last_buy_time, '1970-01-01'::timestamptz) AS last_buy_time,
+  COALESCE(t.daily_buy_count, 0) AS daily_buy_count,
+  (SELECT cnt FROM holding_cnt) AS current_holding_count
+FROM candidates c
+LEFT JOIN holding h ON h.stk_cd = c.stk_cd
+LEFT JOIN today_buy t ON t.stk_cd = c.stk_cd
+ORDER BY c.score_total DESC;
+`, accountId)
+	if err != nil {
+		logger.Error("GetBuyCandidates :: error :: " + err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []model.CandidateEntity
+	for rows.Next() {
+		var c model.CandidateEntity
+		if err := rows.Scan(
+			&c.StkCd,
+			&c.LastPrice,
+			&c.ScoreTotal,
+			&c.AlreadyHolding,
+			&c.LastBuyTime,
+			&c.DailyBuyCount,
+			&c.CurrentHoldingCount,
+		); err != nil {
+			logger.Error("GetBuyCandidates :: error :: " + err.Error())
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}

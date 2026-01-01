@@ -17,13 +17,13 @@ func ShouldBuy(
 		return DecisionResult{false, "market_emergency"}
 	}
 
-	if !market.IsBull {
-		return DecisionResult{false, "not_bull_market"}
-	}
+	//if !market.IsBull {
+	//	return DecisionResult{false, "not_bull_market"}
+	//}
 
-	if stock.Score < 70 {
-		return DecisionResult{false, "score_too_low"}
-	}
+	//if stock.Score < 70 {
+	//	return DecisionResult{false, "score_too_low"}
+	//}
 
 	if alreadyHolding {
 		// 추가 매수 조건 (단순 예시)
@@ -32,7 +32,7 @@ func ShouldBuy(
 		}
 	}
 
-	if now.Sub(lastBuyTime) < time.Minute*time.Duration(constraints.CoolTimeMinutes) {
+	if now.Sub(lastBuyTime) < time.Minute*time.Duration(constraints.CooldownAfterBuy) {
 		return DecisionResult{false, "cool_time"}
 	}
 
@@ -40,7 +40,7 @@ func ShouldBuy(
 		return DecisionResult{false, "daily_buy_limit"}
 	}
 
-	if currentHoldingCount >= constraints.MaxConcurrentHolding {
+	if currentHoldingCount >= constraints.MaxHoldingCount {
 		return DecisionResult{false, "concurrent_holding_limit"}
 	}
 

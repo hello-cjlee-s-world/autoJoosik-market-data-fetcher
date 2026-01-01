@@ -26,24 +26,14 @@ type Position struct {
 }
 
 type BuyConstraints struct {
-	MaxInvestmentPerStock float64
-	MaxDailyBuyCount      int
-	MaxConcurrentHolding  int
-	CoolTimeMinutes       int
+	MaxHoldingCount      int
+	MaxDailyBuyCount     int
+	CooldownAfterBuy     time.Duration
+	AllowAddBuy          bool
+	MaxInvestPerStockPct float64
 }
 
 type DecisionResult struct {
 	Do     bool
 	Reason string
-}
-
-type Candidate struct {
-	StkCd               string
-	CurrentPrice        float64
-	Score               float64
-	LastPrice           float64
-	AlreadyHolding      bool
-	LastBuyTime         time.Time
-	DailyBuyCount       int
-	CurrentHoldingCount int
 }

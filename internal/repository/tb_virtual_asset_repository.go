@@ -50,14 +50,15 @@ func UpsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetE
 
 		  last_price = EXCLUDED.last_price,
 		     
-		  highest_price = CASE
-		     WHEN $7::text = 'B'
-			  AND tb_virtual_asset.highest_price < EXCLUDED.avg_price
-			   THEN EXCLUDED.avg_price
-		     WHEN $7::text = 'S'
-		       THEN tb_virtual_asset.highest_price
-		    END,
-			 
+		highest_price = CASE
+		  WHEN EXCLUDED.position_side = 'B'
+		   AND tb_virtual_asset.highest_price < EXCLUDED.avg_price
+			THEN EXCLUDED.avg_price
+		  WHEN EXCLUDED.position_side = 'S'
+			THEN tb_virtual_asset.highest_price
+		  ELSE tb_virtual_asset.avg_price
+		END,
+		 
 
 		  invested_amount = CASE
 			WHEN $7::text = 'B' THEN tb_virtual_asset.invested_amount + EXCLUDED.invested_amount
@@ -82,7 +83,7 @@ func UpsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetE
 		entity.Status,
 	)
 	if err != nil {
-		logger.Error("UpsertVirtualAsset :: error :: ", err)
+		logger.Error("UpsertVirtualAsset :: error :: ", err.Error())
 		return err
 	}
 	logger.Debug("UpsertVirtualAsset :: success :: ", "stk_cd", entity.StkCd)
@@ -114,38 +115,53 @@ func GetAvailableAssetsByAccountAndStkCd(ctx context.Context, db DB, accountId i
 	return availableQty, nil
 }
 
-func GetHoldingPositions(ctx context.Context, db DB, accountId int64) ([]model.HoldingPosition, error) {
-	var virtualAssetEntities []model.TbVirtualAssetEntity
-	var holdingPositions []model.HoldingPosition
+func GetHoldingPositions(ctx context.Context, db DB, accountId int64) ([]model.HoldingPositionEntity, error) {
+	var holdingPositions []model.HoldingPositionEntity
 
-	err := db.QueryRow(ctx, `
-	SELECT * 
+	rows, err := db.Query(ctx, `
+	SELECT 
+	    account_id,
+		user_id,
+		stk_cd,
+		market,
+		qty,
+		available_qty,
+		avg_price,
+		last_price,
+		highest_price,
+		invested_amount,
+		created_at,
+		updated_at
 	FROM tb_virtual_asset
 	WHERE account_id = $1
-`, accountId).Scan(&virtualAssetEntities)
+`, accountId)
 
 	if err != nil {
-		logger.Error("GetHoldingPositions :: error :: " + err.Error())
+		logger.Error("GetBuyCandidates :: error :: " + err.Error())
+		return nil, err
 	}
+	defer rows.Close()
 
-	if virtualAssetEntities != nil && len(virtualAssetEntities) > 0 {
-		for _, virtualAssetEntity := range virtualAssetEntities {
-			var position = model.HoldingPosition{
-				AccountId:    virtualAssetEntity.AccountId,
-				UserId:       virtualAssetEntity.UserId,
-				StkCd:        virtualAssetEntity.StkCd,
-				Market:       virtualAssetEntity.Market,
-				Qty:          virtualAssetEntity.Qty,
-				AvailableQty: virtualAssetEntity.AvailableQty,
-				AvgPrice:     virtualAssetEntity.AvgPrice,
-				LastPrice:    virtualAssetEntity.LastPrice,
-				HighestPrice: virtualAssetEntity.HighestPrice,
-				InvestedAmt:  virtualAssetEntity.InvestedAmount,
-				CreatedAt:    virtualAssetEntity.CreatedAt,
-				UpdatedAt:    virtualAssetEntity.UpdatedAt,
-			}
-			holdingPositions = append(holdingPositions, position)
+	if rows.Next() {
+		var position model.HoldingPositionEntity
+		if err := rows.Scan(
+			&position.AccountId,
+			&position.UserId,
+			&position.StkCd,
+			&position.Market,
+			&position.Qty,
+			&position.AvailableQty,
+			&position.AvgPrice,
+			&position.LastPrice,
+			&position.HighestPrice,
+			&position.InvestedAmount,
+			&position.CreatedAt,
+			&position.UpdatedAt,
+		); err != nil {
+			logger.Error("GetHoldingPositions :: error :: " + err.Error())
+			return nil, err
 		}
+		holdingPositions = append(holdingPositions, position)
 	}
 
 	return holdingPositions, nil

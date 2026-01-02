@@ -9,9 +9,9 @@ import (
 	"strings"
 )
 
-func UpsertStockInfo(ctx context.Context, pool *pgxpool.Pool, entity model.StockInfoEntity) error {
+func UpsertStockInfo(ctx context.Context, pool *pgxpool.Pool, entity model.TbStockInfoEntity) error {
 	_, err := pool.Exec(ctx,
-		`INSERT INTO stock_info (
+		`INSERT INTO tb_stock_info (
         stk_cd, stk_nm, setl_mm, fav, cap,
         flo_stk, crd_rt, oyr_hgst, oyr_lwst, mac,
         mac_wght, for_exh_rt, repl_pric, per, eps,
@@ -134,7 +134,7 @@ func UpsertStockInfo(ctx context.Context, pool *pgxpool.Pool, entity model.Stock
 	return nil
 }
 
-func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []model.StockInfoEntity) error {
+func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []model.TbStockInfoEntity) error {
 	if len(entities) == 0 {
 		return nil
 	}
@@ -174,7 +174,7 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 	}
 
 	query := fmt.Sprintf(`
-		INSERT INTO stock_info (
+		INSERT INTO tb_stock_info (
 			stk_cd, stk_nm, setl_mm, fav, cap,
 			flo_stk, crd_rt, oyr_hgst, oyr_lwst, mac,
 			mac_wght, for_exh_rt, repl_pric, per, eps,
@@ -202,8 +202,8 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 }
 
 // 기업 점수 계산 위한 컬럼만 select
-func GetStockFundamental(ctx context.Context, pool DB, stkCd string) (model.StockInfoEntity, error) {
-	var entity model.StockInfoEntity
+func GetStockFundamental(ctx context.Context, pool DB, stkCd string) (model.TbStockInfoEntity, error) {
+	var entity model.TbStockInfoEntity
 	err := pool.QueryRow(ctx, `
 SELECT
   per,
@@ -212,7 +212,7 @@ SELECT
   eps,
   for_exh_rt,
   cap
-FROM stock_info
+FROM tb_stock_info
 WHERE stk_cd = $1;
 `, stkCd).Scan(&entity.Per, &entity.Roe, &entity.Pbr, &entity.Eps, &entity.ForExhRt, &entity.Cap)
 	if err != nil {

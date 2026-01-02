@@ -13,7 +13,7 @@ type TradeResponse struct {
 	ReturnMsg  string            `json:"return_msg"`
 }
 
-// TradeInfoLogEntity 체결정보 로그
+// TbTradeInfoLogEntity 체결정보 로그
 type TradeInfoLogRaw struct {
 	Tm            string `json:"tm"`               // 시간 (API 그대로 저장)
 	CurPrc        string `json:"cur_prc"`          // 현재가
@@ -29,7 +29,7 @@ type TradeInfoLogRaw struct {
 	StexTp        string `json:"stex_tp"`          // 거래소구분 (KRX, NXT, 통합)
 }
 
-type TradeInfoLogEntity struct {
+type TbTradeInfoLogEntity struct {
 	Tm            time.Time `db:"tm"`       // 시간
 	CurPrc        float64   `db:"cur_prc"`  // 현재가
 	PredPre       float64   `db:"pred_pre"` // 전일대비
@@ -46,8 +46,8 @@ type TradeInfoLogEntity struct {
 	CreatedAt     time.Time `db:"created_at"`     // 적재 시간
 }
 
-func (r TradeInfoLogRaw) ToEntity(stkCd string) TradeInfoLogEntity {
-	return TradeInfoLogEntity{
+func (r TradeInfoLogRaw) ToEntity(stkCd string) TbTradeInfoLogEntity {
+	return TbTradeInfoLogEntity{
 		Tm:            utils.ParseTradeTimestamp(r.Tm),
 		CurPrc:        utils.ParseFloat(r.CurPrc),
 		PredPre:       utils.ParseFloat(r.PredPre),
@@ -65,15 +65,15 @@ func (r TradeInfoLogRaw) ToEntity(stkCd string) TradeInfoLogEntity {
 	}
 }
 
-func ToTradeInfoLogEntity(str string, stkCd string) []TradeInfoLogEntity {
+func ToTbTradeInfoLogEntity(str string, stkCd string) []TbTradeInfoLogEntity {
 	var resp TradeResponse
 	err := json.Unmarshal([]byte(str), &resp)
 	if err != nil {
-		logger.Error("While doing ToTradeInfoLogEntity :: ", err.Error())
+		logger.Error("While doing ToTbTradeInfoLogEntity :: ", err.Error())
 		return nil
 	}
 
-	entities := make([]TradeInfoLogEntity, 0, len(resp.CntrInfr))
+	entities := make([]TbTradeInfoLogEntity, 0, len(resp.CntrInfr))
 	for _, raw := range resp.CntrInfr {
 		entities = append(entities, raw.ToEntity(stkCd))
 	}

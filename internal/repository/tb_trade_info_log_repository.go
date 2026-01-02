@@ -8,9 +8,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func UpsertTradeInfo(ctx context.Context, pool *pgxpool.Pool, entity model.TradeInfoLogEntity) error {
+func UpsertTradeInfo(ctx context.Context, pool *pgxpool.Pool, entity model.TbTradeInfoLogEntity) error {
 	_, err := pool.Exec(ctx, `
-    INSERT INTO trade_info_log (
+    INSERT INTO tb_trade_info_log (
         stk_cd, tm, cur_prc, pred_pre, pre_rt,
         pri_sel_bid_unit, pri_buy_bid_unit, cntr_trde_qty, sign,
         acc_trde_qty, acc_trde_prica, cntr_str, stex_tp, created_at
@@ -44,11 +44,11 @@ func UpsertTradeInfo(ctx context.Context, pool *pgxpool.Pool, entity model.Trade
 	return nil
 }
 
-func UpsertTradeInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []model.TradeInfoLogEntity) error {
+func UpsertTradeInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []model.TbTradeInfoLogEntity) error {
 	batch := &pgx.Batch{}
 	for _, entity := range entities {
 		batch.Queue(`
-        INSERT INTO trade_info_log (
+        INSERT INTO tb_trade_info_log (
             stk_cd, tm, cur_prc, pred_pre, pre_rt,
             pri_sel_bid_unit, pri_buy_bid_unit, cntr_trde_qty, sign,
             acc_trde_qty, acc_trde_prica, cntr_str, stex_tp, created_at

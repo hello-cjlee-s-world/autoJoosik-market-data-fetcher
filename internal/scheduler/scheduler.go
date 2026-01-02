@@ -78,7 +78,7 @@ func (r *Runner) Reload(ctx context.Context) error {
 // DB에서 스케줄 읽기
 func LoadTaskConfigs(ctx context.Context, pool *pgxpool.Pool) ([]TaskConfig, error) {
 	// enabled 컬럼 없을 수 있으니 심플하게 3개만
-	rows, err := pool.Query(ctx, `SELECT name, schedule, task_type FROM schedule_info WHERE enabled = true`)
+	rows, err := pool.Query(ctx, `SELECT name, schedule, task_type FROM tb_schedule_info WHERE enabled = true`)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 			if err != nil {
 				return err
 			}
-			entList := model.ToTradeInfoLogEntity(rst, stkCd)
+			entList := model.ToTbTradeInfoLogEntity(rst, stkCd)
 			err = repository.UpsertTradeInfoBatch(ctx, pool, entList)
 			if err != nil {
 				return err
@@ -184,7 +184,7 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 			if err != nil {
 				return err
 			}
-			ent := model.ToStockInfoEntity(rst)
+			ent := model.ToTbStockInfoEntity(rst)
 			err = repository.UpsertStockInfo(ctx, pool, ent)
 			if err != nil {
 				return err
@@ -198,8 +198,8 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 			// 추후 stkCd list 불러와서 for 문 수정
 			stkCd := "005930"
 			bullBearEntity, _ := repository.GetBullBearValue(ctx, pool, stkCd)
-			stockInfoEntity, _ := repository.GetStockFundamental(ctx, pool, stkCd)
-			score, _ := calcScoreToEntity(bullBearEntity, stockInfoEntity, stkCd)
+			tbStockInfoEntity, _ := repository.GetStockFundamental(ctx, pool, stkCd)
+			score, _ := calcScoreToEntity(bullBearEntity, tbStockInfoEntity, stkCd)
 
 			err := repository.UpsertStockScore(ctx, pool, score)
 			if err != nil {
@@ -217,7 +217,7 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 	}
 	log.Println("[scheduler] started")
 
-	// (옵션) 주기적 리로드: schedule_info 변경 반영
+	// (옵션) 주기적 리로드: tb_schedule_info 변경 반영
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
@@ -237,7 +237,7 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 
 func calcScoreToEntity(
 	bullEntity model.BullBearEntity, // R1,R2,R3,Volatility,LastPrice 같은 값 있다고 가정
-	infoEntity model.StockInfoEntity, // Per,Pbr,Roe,Eps,ForExhRt,Cap 등이 string으로 들어있다고 가정
+	infoEntity model.TbStockInfoEntity, // Per,Pbr,Roe,Eps,ForExhRt,Cap 등이 string으로 들어있다고 가정
 	stkCd string,
 ) (model.TbStockScoreEntity, error) {
 	var ent model.TbStockScoreEntity

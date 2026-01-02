@@ -16,7 +16,7 @@ func GetBullBearValue(ctx context.Context, db DB, stkCd string) (model.BullBearE
   COALESCE((cur_prc - LAG(cur_prc, 30) OVER w) / NULLIF(LAG(cur_prc, 30) OVER w, 0) * 100, 0) AS r3
   FROM (
     SELECT tm, cur_prc
-    FROM trade_info_log
+    FROM tb_trade_info_log
     WHERE stk_cd = $1
     ORDER BY tm DESC
     LIMIT 40

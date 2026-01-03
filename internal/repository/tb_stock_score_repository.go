@@ -4,6 +4,8 @@ import (
 	"autoJoosik-market-data-fetcher/internal/model"
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"context"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func UpsertStockScore(ctx context.Context, db DB, entity model.TbStockScoreEntity) error {
@@ -53,7 +55,75 @@ func UpsertStockScore(ctx context.Context, db DB, entity model.TbStockScoreEntit
 	return nil
 }
 
+func UpsertStockScoreBatch(
+	ctx context.Context,
+	pool *pgxpool.Pool,
+	entities []model.TbStockScoreEntity,
+) error {
+
+	if len(entities) == 0 {
+		return nil
+	}
+
+	batch := &pgx.Batch{}
+
+	for _, entity := range entities {
+		batch.Queue(`
+			INSERT INTO tb_stock_score(
+				stk_cd, score_total, score_fundamental, score_momentum,
+				score_market, score_risk, last_price, r1, r2, r3,
+				volatility, asof_tm, meta, created_at, updated_at
+			) VALUES (
+				$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,now(),now()
+			)
+			ON CONFLICT (stk_cd)
+			DO UPDATE SET
+				score_total = EXCLUDED.score_total,
+				score_fundamental = EXCLUDED.score_fundamental,
+				score_momentum = EXCLUDED.score_momentum,
+				score_market = EXCLUDED.score_market,
+				score_risk = EXCLUDED.score_risk,
+				last_price = EXCLUDED.last_price,
+				r1 = EXCLUDED.r1,
+				r2 = EXCLUDED.r2,
+				r3 = EXCLUDED.r3,
+				volatility = EXCLUDED.volatility,
+				asof_tm = EXCLUDED.asof_tm,
+				meta = EXCLUDED.meta,
+				-- 보통 created_at은 업데이트하지 않는 걸 추천(아래 참고)
+				updated_at = now()
+		`,
+			entity.StkCd,
+			entity.ScoreTotal,
+			entity.ScoreFundamental,
+			entity.ScoreMomentum,
+			entity.ScoreMarket,
+			entity.ScoreRisk,
+			entity.LastPrice,
+			entity.R1,
+			entity.R2,
+			entity.R3,
+			entity.Volatility,
+			entity.AsofTm,
+			entity.Meta,
+		)
+	}
+
+	br := pool.SendBatch(ctx, batch)
+	defer br.Close()
+
+	for range entities {
+		if _, err := br.Exec(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func GetBuyCandidates(ctx context.Context, db DB, accountId int64) ([]model.CandidateEntity, error) {
+	var out []model.CandidateEntity
+
 	rows, err := db.Query(ctx, `
 WITH candidates AS (
   SELECT stk_cd, last_price, score_total
@@ -98,7 +168,6 @@ ORDER BY c.score_total DESC;
 	}
 	defer rows.Close()
 
-	var out []model.CandidateEntity
 	for rows.Next() {
 		var c model.CandidateEntity
 		if err := rows.Scan(

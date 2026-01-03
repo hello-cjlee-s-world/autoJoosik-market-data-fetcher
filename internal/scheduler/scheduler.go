@@ -38,6 +38,10 @@ type Runner struct {
 	s        *gocron.Scheduler
 }
 
+// 거래 목록
+var TradeUniverses []model.TbTradeUniverseEntity
+var StkCdList []string
+
 // Runner 생성
 func NewRunner(pool *pgxpool.Pool, reg Registry) *Runner {
 	s := gocron.NewScheduler(time.Local)
@@ -165,27 +169,50 @@ func parseEverySpec(s string) (int, string, error) {
 func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 	// 실제 업무 함수들 등록 (task_type -> 함수). 필요 시 pool 캡쳐해서 사용
 	reg := Registry{
-		"GetTradeInfoLog": func(ctx context.Context) error {
-			stkCd := "005930"
-			rst, err := kiwoomApi.GetTradeInfoLog(stkCd)
+		"GetTradeUniverse": func(ctx context.Context) error {
+			rst, err := repository.GetTradeUniverse(ctx, pool)
 			if err != nil {
 				return err
 			}
-			entList := model.ToTbTradeInfoLogEntity(rst, stkCd)
-			err = repository.UpsertTradeInfoBatch(ctx, pool, entList)
+			if len(rst) > 0 {
+				TradeUniverses = rst
+				for _, u := range TradeUniverses {
+					StkCdList = append(StkCdList, u.StkCd)
+				}
+
+			}
+			return nil
+		},
+		"GetTradeInfoLog": func(ctx context.Context) error {
+			// fix !! 가지고 있는 종목 별로 바꿔야됨
+			var entList []model.TbTradeInfoLogEntity
+			for _, stkCd := range StkCdList {
+				rst, err := kiwoomApi.GetTradeInfoLog(stkCd)
+				if err != nil {
+					return err
+				}
+				ToEntList := model.ToTbTradeInfoLogEntity(rst, stkCd)
+				entList = append(entList, ToEntList...)
+			}
+
+			err := repository.UpsertTradeInfoBatch(ctx, pool, entList)
 			if err != nil {
 				return err
 			}
 			return nil
 		},
 		"UpsertStockInfo": func(ctx context.Context) error {
-			stkCd := "005930"
-			rst, err := kiwoomApi.GetStockInfo(stkCd)
-			if err != nil {
-				return err
+			var entList []model.TbStockInfoEntity
+			for _, stkCd := range StkCdList {
+				rst, err := kiwoomApi.GetStockInfo(stkCd)
+				if err != nil {
+					return err
+				}
+				ent := model.ToTbStockInfoEntity(rst)
+				entList = append(entList, ent)
 			}
-			ent := model.ToTbStockInfoEntity(rst)
-			err = repository.UpsertStockInfo(ctx, pool, ent)
+
+			err := repository.UpsertStockInfoBatch(ctx, pool, entList)
 			if err != nil {
 				return err
 			}
@@ -195,13 +222,16 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 			return autoSellerService.DecideAndExecute(ctx, pool)
 		},
 		"CalStockScore": func(ctx context.Context) error {
-			// 추후 stkCd list 불러와서 for 문 수정
-			stkCd := "005930"
-			bullBearEntity, _ := repository.GetBullBearValue(ctx, pool, stkCd)
-			tbStockInfoEntity, _ := repository.GetStockFundamental(ctx, pool, stkCd)
-			score, _ := calcScoreToEntity(bullBearEntity, tbStockInfoEntity, stkCd)
+			var entList []model.TbStockScoreEntity
 
-			err := repository.UpsertStockScore(ctx, pool, score)
+			for _, stkCd := range StkCdList {
+				bullBearEntity, _ := repository.GetBullBearValue(ctx, pool, stkCd)
+				tbStockInfoEntity, _ := repository.GetStockFundamental(ctx, pool, stkCd)
+				ent, _ := calcScoreToEntity(bullBearEntity, tbStockInfoEntity, stkCd)
+				entList = append(entList, ent)
+			}
+
+			err := repository.UpsertStockScoreBatch(ctx, pool, entList)
 			if err != nil {
 				return err
 			}

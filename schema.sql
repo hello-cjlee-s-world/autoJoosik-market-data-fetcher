@@ -11,6 +11,7 @@ DROP TABLE tb_virtual_account;
 DROP TABLE tb_virtual_account;
 DROP TABLE tb_virtual_order;
 DROP TABLE tb_virtual_trade_log;
+DROP TABLE tb_trade_universe;
 
 DROP INDEX IF EXISTS idx_tb_trade_info_log_tm;
 DROP INDEX IF EXISTS idx_tb_trade_info_log_stextp;
@@ -511,6 +512,45 @@ CREATE INDEX IF NOT EXISTS ix_stock_score_total
 CREATE INDEX IF NOT EXISTS ix_stock_score_updated
     ON tb_stock_score (updated_at DESC);
 
+-- 매매 대상 테이블
+CREATE TABLE IF NOT EXISTS tb_trade_universe (
+    stk_cd            varchar(12)  NOT NULL,         -- 종목코드
+    market            varchar(16)  NOT NULL,         -- KOSPI/KOSDAQ/ETF/...
+    name              varchar(80)  NULL,             -- 종목명(선택)
+
+    enabled           boolean      NOT NULL DEFAULT true,     -- 매매 대상 여부(킬스위치)
+    status            varchar(16)  NOT NULL DEFAULT 'NORMAL', -- NORMAL(정상 매매 가능)/HALT(거래 정지)/DELIST(상장폐지)/WATCH(감시 대상)/BLOCK(시스템 차단)
+    status_reason     text         NULL,                      -- 사유
+
+--     strategy_group    varchar(32)  NOT NULL DEFAULT 'SCALP',  -- 예: SCALP/DAY/SWING
+--     tags              text[]       NOT NULL DEFAULT '{}',     -- 예: {"VOL","NEWS","BREAKOUT"}
+
+--     priority          integer      NOT NULL DEFAULT 100,      -- 낮을수록 우선(0~)
+--     max_position_qty  numeric(20,4) NULL,                     -- 종목별 최대 수량(리스크)
+--     max_position_amt  numeric(20,4) NULL,                     -- 종목별 최대 금액(리스크)
+
+-- 선정/모니터링에 쓰는 최신 스냅샷(매 분/매 5분 갱신 가능)
+--     last_price        numeric(20,4) NULL,
+--     change_rate       numeric(10,4) NULL,                     -- 전일대비 등락률(%)
+--     trd_amt_today     numeric(20,4) NULL,                     -- 당일 거래대금
+--     range_pct_today   numeric(10,4) NULL,                     -- (고가-저가)/기준가 * 100
+--     vol_ratio_5m      numeric(10,4) NULL,                     -- 최근5분 거래량 / 평균5분 거래량
+--     vwap_bias_pct     numeric(10,4) NULL,                     -- (현재가 - VWAP)/VWAP * 100
+
+-- 운영용
+--     last_selected_at  timestamptz  NULL,                      -- 자동 선정에 의해 enabled 갱신된 시각
+--     last_traded_at    timestamptz  NULL,                      -- 마지막 매매 시각(옵션)
+-- --     meta              jsonb        NOT NULL DEFAULT '{}'::jsonb,
+--
+    created_at        timestamptz  NOT NULL DEFAULT now(),
+    updated_at        timestamptz  NOT NULL DEFAULT now(),
+--
+    CONSTRAINT pk_tb_trade_universe PRIMARY KEY (stk_cd),
+    CONSTRAINT ck_status CHECK (status IN ('NORMAL','HALT','DELIST','WATCH','BLOCK'))
+);
+
+CREATE INDEX IF NOT EXISTS ix_universe_updated
+    ON tb_trade_universe (updated_at DESC);
 
 -- 종목별 변동성 조회 function
 CREATE OR REPLACE FUNCTION fn_volatility(

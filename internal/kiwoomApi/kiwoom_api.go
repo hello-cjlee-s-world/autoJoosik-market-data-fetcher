@@ -1,6 +1,7 @@
 package kiwoomApi
 
 import (
+	"autoJoosik-market-data-fetcher/pkg/logger"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -122,6 +123,8 @@ func GetStockInfo(stkCd string) (string, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
+	} else {
+		logger.Info("GetStockInfo :: success ::")
 	}
 
 	//var token TokenResponse
@@ -161,6 +164,8 @@ func GetTradeInfoLog(stkCd string) (string, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
+	} else {
+		logger.Info("GetTradeInfoLog:: success :: " + stkCd)
 	}
 
 	//var token TokenResponse

@@ -84,7 +84,7 @@ func UpsertTradeInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 			return err
 		}
 	}
-	logger.Debug("UpsertStockInfo :: success :: ")
+	logger.Debug("UpsertTradeInfoBatch :: success :: ")
 
 	return br.Close()
 }

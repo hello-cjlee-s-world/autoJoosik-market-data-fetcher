@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"math"
 	"strconv"
@@ -176,6 +177,8 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 			}
 			if len(rst) > 0 {
 				TradeUniverses = rst
+				// 누적 append 방지
+				StkCdList = StkCdList[:0]
 				for _, u := range TradeUniverses {
 					StkCdList = append(StkCdList, u.StkCd)
 				}
@@ -223,25 +226,40 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 		},
 		"CalStockScore": func(ctx context.Context) error {
 			var entList []model.TbStockScoreEntity
-
+			fmt.Println(StkCdList)
 			for _, stkCd := range StkCdList {
-				bullBearEntity, _ := repository.GetBullBearValue(ctx, pool, stkCd)
-				tbStockInfoEntity, _ := repository.GetStockFundamental(ctx, pool, stkCd)
-				ent, _ := calcScoreToEntity(bullBearEntity, tbStockInfoEntity, stkCd)
+				bullBearEntity, err := repository.GetBullBearValue(ctx, pool, stkCd)
+				if err != nil {
+					return err
+				}
+				tbStockInfoEntity, err := repository.GetStockFundamental(ctx, pool, stkCd)
+				if err != nil {
+					return err
+				}
+				ent, err := calcScoreToEntity(bullBearEntity, tbStockInfoEntity, stkCd)
+				if err != nil {
+					return err
+				}
 				entList = append(entList, ent)
 			}
 
-			err := repository.UpsertStockScoreBatch(ctx, pool, entList)
-			if err != nil {
-				return err
-			}
-
-			return nil
+			return repository.UpsertStockScoreBatch(ctx, pool, entList)
 		},
 	}
 
 	// 러너 생성 & 시작
 	r := NewRunner(pool, reg)
+
+	// 장 상태 감시: 30초마다 체크
+	guard := time.NewTicker(30 * time.Second)
+	defer guard.Stop()
+
+	// schedule_info 리로드용(장 열렸을 때만 수행 추천)
+	reloadTicker := time.NewTicker(30 * time.Second)
+	defer reloadTicker.Stop()
+
+	running := false
+
 	if err := r.Start(ctx); err != nil {
 		log.Fatal("scheduler start:", err)
 	}
@@ -254,12 +272,36 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 	for {
 		select {
 		case <-ctx.Done():
-			r.Stop()
+			if running {
+				r.Stop()
+			}
 			log.Println("[scheduler] stopped")
 			return
-		case <-ticker.C:
-			if err := r.Reload(ctx); err != nil {
-				log.Println("[scheduler] reload error:", err)
+
+		case <-guard.C:
+			now := time.Now() // 서버 로컬 타임존이 KST여야 함(Asia/Seoul)
+			if IsTradableTime(now) {
+				if !running {
+					if err := r.Start(ctx); err != nil {
+						log.Println("[scheduler] start error:", err)
+						continue
+					}
+					running = true
+					log.Println("[scheduler] started (market open)")
+				}
+			} else {
+				if running {
+					r.Stop()
+					running = false
+					log.Println("[scheduler] stopped (market closed)")
+				}
+			}
+
+		case <-reloadTicker.C:
+			if running {
+				if err := r.Reload(ctx); err != nil {
+					log.Println("[scheduler] reload error:", err)
+				}
 			}
 		}
 	}
@@ -383,4 +425,14 @@ func calcScoreToEntity(
 	}
 	logger.Debug("calcScoreToEntity :: Success :: " + ent.StkCd)
 	return ent, nil
+}
+
+// 거래 시간,날짜 제어
+func IsTradableTime(now time.Time) bool {
+	if now.Weekday() == time.Saturday || now.Weekday() == time.Sunday {
+		return false
+	}
+
+	tradableMin := now.Hour()*60 + now.Minute()
+	return tradableMin >= 9*60+5 && tradableMin <= 15*60+20
 }

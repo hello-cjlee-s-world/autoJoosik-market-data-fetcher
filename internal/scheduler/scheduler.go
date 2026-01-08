@@ -264,6 +264,7 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 		log.Fatal("scheduler start:", err)
 	}
 	log.Println("[scheduler] started")
+	running = true
 
 	// (옵션) 주기적 리로드: tb_schedule_info 변경 반영
 	ticker := time.NewTicker(30 * time.Second)

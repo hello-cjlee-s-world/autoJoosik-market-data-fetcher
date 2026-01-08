@@ -26,10 +26,10 @@ func KiwoomInit(kiwoomConfig KiwoomConfig) {
 	kwConfig = kiwoomConfig
 	token, err := GetToken()
 	if err != nil {
-		fmt.Println("토큰 요청 실패:", err)
+		logger.Info("토큰 요청 실패:", err)
 		return
 	} else {
-		fmt.Println("Token Value : " + token)
+		logger.Info("Token Value : " + token)
 		tokenObj := map[string]string{}
 		err = json.Unmarshal([]byte(token), &tokenObj)
 		if err != nil {

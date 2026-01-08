@@ -10,8 +10,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -226,7 +224,6 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 		},
 		"CalStockScore": func(ctx context.Context) error {
 			var entList []model.TbStockScoreEntity
-			fmt.Println(StkCdList)
 			for _, stkCd := range StkCdList {
 				bullBearEntity, err := repository.GetBullBearValue(ctx, pool, stkCd)
 				if err != nil {
@@ -261,9 +258,9 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 	running := false
 
 	if err := r.Start(ctx); err != nil {
-		log.Fatal("scheduler start:", err)
+		logger.Warn("scheduler start:", err)
 	}
-	log.Println("[scheduler] started")
+	logger.Info("[scheduler] started")
 	running = true
 
 	// (옵션) 주기적 리로드: tb_schedule_info 변경 반영
@@ -276,7 +273,7 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 			if running {
 				r.Stop()
 			}
-			log.Println("[scheduler] stopped")
+			logger.Info("[scheduler] stopped")
 			return
 
 		case <-guard.C:
@@ -284,24 +281,24 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 			if IsTradableTime(now) {
 				if !running {
 					if err := r.Start(ctx); err != nil {
-						log.Println("[scheduler] start error:", err)
+						logger.Info("[scheduler] start error:", err)
 						continue
 					}
 					running = true
-					log.Println("[scheduler] started (market open)")
+					logger.Info("[scheduler] started (market open)")
 				}
 			} else {
 				if running {
 					r.Stop()
 					running = false
-					log.Println("[scheduler] stopped (market closed)")
+					logger.Info("[scheduler] stopped (market closed)")
 				}
 			}
 
 		case <-reloadTicker.C:
 			if running {
 				if err := r.Reload(ctx); err != nil {
-					log.Println("[scheduler] reload error:", err)
+					logger.Info("[scheduler] reload error:", err)
 				}
 			}
 		}
@@ -433,7 +430,6 @@ func IsTradableTime(now time.Time) bool {
 	if now.Weekday() == time.Saturday || now.Weekday() == time.Sunday {
 		return false
 	}
-
 	tradableMin := now.Hour()*60 + now.Minute()
 	return tradableMin >= 9*60+5 && tradableMin <= 15*60+20
 }

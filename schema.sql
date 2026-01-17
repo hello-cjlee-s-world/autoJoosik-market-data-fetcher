@@ -7,7 +7,7 @@ DROP TABLE account_profit_log;
 DROP TABLE atn_stk_infr;
 DROP TABLE tb_schedule_info;
 DROP TABLE tb_virtual_asset;
-DROP TABLE tb_virtual_account;
+DROP TABLE tb_virtual_asset_daily;
 DROP TABLE tb_virtual_account;
 DROP TABLE tb_virtual_order;
 DROP TABLE tb_virtual_trade_log;
@@ -381,6 +381,23 @@ CREATE TABLE tb_virtual_asset ( --가상자산 테이블
 CREATE UNIQUE INDEX IF NOT EXISTS uq_virtual_asset
     ON tb_virtual_asset (account_id, stk_cd, market, position_side);
 
+
+CREATE TABLE tb_virtual_asset_daily (
+                                          id             BIGSERIAL PRIMARY KEY,
+
+                                          user_id        BIGINT NOT NULL,
+                                          account_id     BIGINT NOT NULL,
+
+                                          base_date      DATE   NOT NULL,              -- 기준일 (01/05 등)
+
+                                          total_assets   NUMERIC(18,2) NOT NULL,       -- 총 자산
+                                          stock_value    NUMERIC(18,2) NOT NULL,       -- 주식 평가금액 합
+                                          cash_balance   NUMERIC(18,2) NOT NULL,       -- 현금
+
+                                          created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+                                          UNIQUE (account_id, base_date)
+);
 
 
 

@@ -337,11 +337,22 @@ CREATE TABLE tb_schedule_info ( -- 스케줄 목록
 );
 INSERT INTO public.tb_schedule_info
 (id, "name", schedule, task_type, enabled, created_at)
-VALUES(1, 'trade-info', 'every 10s', 'GetTradeInfoLog', true, '2025-09-05 17:04:14.463');
-
+VALUES(2, 'stock-info', 'every 5m', 'UpsertStockInfo', true, now());
 INSERT INTO public.tb_schedule_info
 (id, "name", schedule, task_type, enabled, created_at)
-VALUES(2, 'stock-info', 'every 3s', 'UpsertStockInfo', true, '2025-09-10 14:54:06.291');
+VALUES(6, 'calculate-asset-stats', 'every 24h', 'CalAssetStats', true, now());
+INSERT INTO public.tb_schedule_info
+(id, "name", schedule, task_type, enabled, created_at)
+VALUES(3, 'sell-or-buy', 'every 3m', 'SellOrBuy', true, now());
+INSERT INTO public.tb_schedule_info
+(id, "name", schedule, task_type, enabled, created_at)
+VALUES(5, 'get-trade-universe', 'every 5m', 'GetTradeUniverse', true, now());
+INSERT INTO public.tb_schedule_info
+(id, "name", schedule, task_type, enabled, created_at)
+VALUES(4, 'calculate-stock-score', 'every 5m', 'CalStockScore', true, now());
+INSERT INTO public.tb_schedule_info
+(id, "name", schedule, task_type, enabled, created_at)
+VALUES(1, 'trade-info', 'every 30s', 'GetTradeInfoLog', true, now());
 
 CREATE TABLE tb_virtual_asset ( --가상자산 테이블
                                   asset_id         BIGSERIAL PRIMARY KEY,              -- 포지션 고유 ID

@@ -242,6 +242,25 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 
 			return repository.UpsertStockScoreBatch(ctx, pool, entList)
 		},
+		"CalAssetStats": func(ctx context.Context) error {
+			accountId := int64(0)
+			account, _ := repository.GetVirtualAccount(ctx, pool, accountId)
+			assetList, _ := repository.GetHoldingPositions(ctx, pool, accountId)
+
+			var cash = int(account.CashBalance)
+			var stockValue = 0
+			for _, asset := range assetList {
+				stockValue += int(asset.Qty) * int(asset.AvgPrice)
+			}
+			var total = cash + stockValue
+
+			err := repository.InsertVirtualAssetDaily(ctx, pool, total, stockValue, cash)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
 	}
 
 	// 러너 생성 & 시작

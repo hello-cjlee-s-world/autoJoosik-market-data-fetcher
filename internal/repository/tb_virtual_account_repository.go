@@ -111,3 +111,23 @@ WHERE account_id = $2
 		return "", nil, fmt.Errorf("invalid flag=%s", flag)
 	}
 }
+
+func GetVirtualAccount(ctx context.Context, db DB, accountId int64) (model.TbVirtualAccountEntity, error) {
+	var entity model.TbVirtualAccountEntity
+
+	err := db.QueryRow(ctx, `
+select 
+    * 
+from 
+    tb_virtual_account 
+where 
+    account_id = $1
+`, accountId).Scan(&entity)
+
+	if err != nil {
+		logger.Error("GetVirtualAccount :: error :: " + err.Error())
+		return entity, err
+	}
+
+	return entity, nil
+}

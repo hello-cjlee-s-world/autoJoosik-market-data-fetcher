@@ -8,7 +8,8 @@ import (
 
 // TbVirtualAssetDailyEntity 가상자산 이력 테이블
 type TbVirtualAssetDailyEntity struct {
-	AssetId     int64     `db:"id" json:"id"`
+	Id          int64     `db:"id" json:"id"`
+	AssetId     int64     `db:"asset_id" json:"asset_id"`
 	UserId      int64     `db:"user_id" json:"user_id"`
 	AccountId   int64     `db:"account_id" json:"account_id"`
 	BaseDate    string    `db:"base_date" json:"base_date"`

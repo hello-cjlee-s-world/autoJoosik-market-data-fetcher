@@ -66,9 +66,6 @@ func main() {
 		SecretKey: props.KiwoomApi.SecretKey,
 	})
 
-	// buy,  sell test
-	//autoSellerService.Sell("005930", 1)
-
 	// scheduler 초기화
 	scheduler.GetSchedule(context.Background(), datasource.GetPool())
 }

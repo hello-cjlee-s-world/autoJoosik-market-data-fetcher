@@ -466,7 +466,7 @@ func IsTradableTime(now time.Time) bool {
 		return false
 	}
 	tradableMin := now.Hour()*60 + now.Minute()
-	return tradableMin >= 9*60+5 && tradableMin <= 15*60+20
+	return tradableMin >= 9*60+1 && tradableMin <= 15*60+10
 }
 
 func (r *Runner) IsRunning() bool {

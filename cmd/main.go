@@ -1,6 +1,7 @@
 package main
 
 import (
+	"autoJoosik-market-data-fetcher/internal/api"
 	"autoJoosik-market-data-fetcher/internal/datasource"
 	"autoJoosik-market-data-fetcher/internal/kiwoomApi"
 	"autoJoosik-market-data-fetcher/internal/scheduler"
@@ -69,6 +70,14 @@ func main() {
 	// buy,  sell test
 	//autoSellerService.Sell("005930", 1)
 
+	runner := scheduler.Runner{}
+
 	// scheduler 초기화
-	scheduler.GetSchedule(context.Background(), datasource.GetPool())
+	go scheduler.GetSchedule(context.Background(), datasource.GetPool(), &runner)
+
+	serverApi := api.Api{
+		Runner: &runner,
+		Port:   props.Server.Port,
+	}
+	serverApi.Init()
 }

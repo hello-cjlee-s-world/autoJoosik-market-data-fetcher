@@ -13,6 +13,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -35,6 +36,7 @@ type Runner struct {
 	pool     *pgxpool.Pool
 	registry Registry
 	s        *gocron.Scheduler
+	running  atomic.Bool
 }
 
 // 거래 목록
@@ -42,28 +44,51 @@ var TradeUniverses []model.TbTradeUniverseEntity
 var StkCdList []string
 
 // Runner 생성
-func NewRunner(pool *pgxpool.Pool, reg Registry) *Runner {
+func NewRunner(pool *pgxpool.Pool, reg Registry, runner *Runner) *Runner {
 	s := gocron.NewScheduler(time.Local)
 	s.TagsUnique()
-	return &Runner{pool: pool, registry: reg, s: s}
+	runner.pool = pool
+	runner.registry = reg
+	runner.s = s
+	return runner
 }
 
-// 시작 (로드 후 비동기 실행)
+var ErrRunnerNotInitialized = errors.New("runner not initialized")
+
+func (r *Runner) Initialized() bool {
+	return r != nil && r.s != nil && r.pool != nil && r.registry != nil
+}
+
 func (r *Runner) Start(ctx context.Context) error {
+	if !r.Initialized() {
+		return ErrRunnerNotInitialized
+	}
+	if !r.running.CompareAndSwap(false, true) {
+		return nil
+	}
 	if err := r.Reload(ctx); err != nil {
+		r.running.Store(false)
 		return err
 	}
 	r.s.StartAsync()
 	return nil
 }
 
-// 중지
-func (r *Runner) Stop() {
+func (r *Runner) Stop() error {
+	if !r.Initialized() {
+		return ErrRunnerNotInitialized
+	}
+	if !r.running.CompareAndSwap(true, false) {
+		return nil
+	}
 	r.s.Stop()
+	return nil
 }
 
-// 스케줄 전부 리로드 (기존 잡 제거 후 DB에서 다시 설정)
 func (r *Runner) Reload(ctx context.Context) error {
+	if !r.Initialized() {
+		return ErrRunnerNotInitialized
+	}
 	r.s.Clear()
 
 	cfgs, err := LoadTaskConfigs(ctx, r.pool)
@@ -165,7 +190,7 @@ func parseEverySpec(s string) (int, string, error) {
 	}
 }
 
-func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
+func GetSchedule(ctx context.Context, pool *pgxpool.Pool, r *Runner) {
 	// 실제 업무 함수들 등록 (task_type -> 함수). 필요 시 pool 캡쳐해서 사용
 	reg := Registry{
 		"GetTradeUniverse": func(ctx context.Context) error {
@@ -264,7 +289,7 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 	}
 
 	// 러너 생성 & 시작
-	r := NewRunner(pool, reg)
+	NewRunner(pool, reg, r)
 
 	// 장 상태 감시: 30초마다 체크
 	guard := time.NewTicker(30 * time.Second)
@@ -274,51 +299,42 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool) {
 	reloadTicker := time.NewTicker(30 * time.Second)
 	defer reloadTicker.Stop()
 
-	running := false
-
 	if err := r.Start(ctx); err != nil {
 		logger.Warn("scheduler start:", err)
 	}
 	logger.Info("[scheduler] started")
-	running = true
-
-	// (옵션) 주기적 리로드: tb_schedule_info 변경 반영
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
-			if running {
-				r.Stop()
-			}
+			r.Stop()
 			logger.Info("[scheduler] stopped")
 			return
 
 		case <-guard.C:
-			now := time.Now() // 서버 로컬 타임존이 KST여야 함(Asia/Seoul)
-			if IsTradableTime(now) {
-				if !running {
-					if err := r.Start(ctx); err != nil {
-						logger.Info("[scheduler] start error:", err)
-						continue
-					}
-					running = true
+			now := time.Now()
+			tradable := IsTradableTime(now)
+
+			if tradable {
+				was := r.IsRunning()
+				if err := r.Start(ctx); err != nil {
+					logger.Info("[scheduler] start error:", err)
+					break
+				}
+				if !was && r.IsRunning() {
 					logger.Info("[scheduler] started (market open)")
 				}
 			} else {
-				if running {
-					r.Stop()
-					running = false
+				was := r.IsRunning()
+				r.Stop()
+				if was && !r.IsRunning() {
 					logger.Info("[scheduler] stopped (market closed)")
 				}
 			}
 
 		case <-reloadTicker.C:
-			if running {
-				if err := r.Reload(ctx); err != nil {
-					logger.Info("[scheduler] reload error:", err)
-				}
+			if err := r.Reload(ctx); err != nil {
+				logger.Info("[scheduler] reload error:", err)
 			}
 		}
 	}
@@ -451,4 +467,8 @@ func IsTradableTime(now time.Time) bool {
 	}
 	tradableMin := now.Hour()*60 + now.Minute()
 	return tradableMin >= 9*60+5 && tradableMin <= 15*60+20
+}
+
+func (r *Runner) IsRunning() bool {
+	return r.running.Load()
 }

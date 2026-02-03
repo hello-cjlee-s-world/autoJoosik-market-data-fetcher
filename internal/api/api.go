@@ -4,14 +4,14 @@ import (
 	"autoJoosik-market-data-fetcher/internal/scheduler"
 	"context"
 	"fmt"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 type Api struct {
@@ -26,6 +26,16 @@ func (api *Api) Init() {
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(requestLogger())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins: []string{
+			"http://localhost:3000",
+			"http://127.0.0.1:3000",
+		},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "ajax"},
+		AllowCredentials: false, // 쿠키/인증 필요 없으면 false로 둬도 됨
+		MaxAge:           12 * time.Hour,
+	}))
 
 	// 헬스체크
 	r.GET("/health", func(c *gin.Context) {

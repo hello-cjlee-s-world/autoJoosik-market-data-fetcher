@@ -37,6 +37,7 @@ type Runner struct {
 	registry Registry
 	s        *gocron.Scheduler
 	running  atomic.Bool
+	enabled  atomic.Bool
 }
 
 // 거래 목록
@@ -50,6 +51,7 @@ func NewRunner(pool *pgxpool.Pool, reg Registry, runner *Runner) *Runner {
 	runner.pool = pool
 	runner.registry = reg
 	runner.s = s
+	runner.enabled.Store(true)
 	return runner
 }
 
@@ -62,6 +64,9 @@ func (r *Runner) Initialized() bool {
 func (r *Runner) Start(ctx context.Context) error {
 	if !r.Initialized() {
 		return ErrRunnerNotInitialized
+	}
+	if !r.enabled.Load() {
+		return nil
 	}
 	if !r.running.CompareAndSwap(false, true) {
 		return nil
@@ -83,6 +88,21 @@ func (r *Runner) Stop() error {
 	}
 	r.s.Stop()
 	return nil
+}
+func (r *Runner) Enable(ctx context.Context) error {
+	if !r.Initialized() {
+		return ErrRunnerNotInitialized
+	}
+	r.enabled.Store(true)
+	return r.Start(ctx)
+}
+
+func (r *Runner) Disable() error {
+	if !r.Initialized() {
+		return ErrRunnerNotInitialized
+	}
+	r.enabled.Store(false)
+	return r.Stop()
 }
 
 func (r *Runner) Reload(ctx context.Context) error {
@@ -312,6 +332,14 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool, r *Runner) {
 			return
 
 		case <-guard.C:
+			if !r.IsEnabled() {
+				was := r.IsRunning()
+				r.Stop()
+				if was && !r.IsRunning() {
+					logger.Info("[scheduler] stopped (manually disabled)")
+				}
+				break
+			}
 			now := time.Now()
 			tradable := IsTradableTime(now)
 
@@ -333,6 +361,9 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool, r *Runner) {
 			}
 
 		case <-reloadTicker.C:
+			if !r.IsEnabled() {
+				break
+			}
 			if err := r.Reload(ctx); err != nil {
 				logger.Info("[scheduler] reload error:", err)
 			}
@@ -471,4 +502,8 @@ func IsTradableTime(now time.Time) bool {
 
 func (r *Runner) IsRunning() bool {
 	return r.running.Load()
+}
+
+func (r *Runner) IsEnabled() bool {
+	return r.enabled.Load()
 }

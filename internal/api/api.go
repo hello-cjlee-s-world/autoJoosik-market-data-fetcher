@@ -46,7 +46,35 @@ func (api *Api) Init() {
 		isRunning := api.Runner.IsRunning()
 		c.JSON(http.StatusOK, gin.H{"running": isRunning})
 	})
-
+	// 스케줄러 상태
+	r.GET("/scheduler/status", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"running": api.Runner.IsRunning(),
+			"enabled": api.Runner.IsEnabled(),
+		})
+	})
+	// 스케줄러 중지
+	r.POST("/scheduler/stop", func(c *gin.Context) {
+		if err := api.Runner.Disable(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"running": api.Runner.IsRunning(),
+			"enabled": api.Runner.IsEnabled(),
+		})
+	})
+	// 스케줄러 시작
+	r.POST("/scheduler/start", func(c *gin.Context) {
+		if err := api.Runner.Enable(c.Request.Context()); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"running": api.Runner.IsRunning(),
+			"enabled": api.Runner.IsEnabled(),
+		})
+	})
 	srv := &http.Server{
 		Addr:              ":" + fmt.Sprint(api.Port),
 		Handler:           r,

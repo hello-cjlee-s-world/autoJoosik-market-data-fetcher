@@ -52,6 +52,7 @@ type TbStockInfoEntity struct {
 	FavUnit       string `db:"fav_unit" json:"fav_unit"`
 	DstrStk       string `db:"dstr_stk" json:"dstr_stk"`
 	DstrRt        string `db:"dstr_rt" json:"dstr_rt"`
+	UpdatedAt     string `db:"updated_at" json:"updated_at"`
 }
 
 func ToTbStockInfoEntity(str string) TbStockInfoEntity {

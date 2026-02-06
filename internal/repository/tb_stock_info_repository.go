@@ -19,7 +19,7 @@ func UpsertStockInfo(ctx context.Context, pool *pgxpool.Pool, entity model.TbSto
         open_pric, low_pric, upl_pric, lst_pric, base_pric,
         exp_cntr_pric, exp_cntr_qty, "250hgst_pric_dt", "250hgst_pric_pre_rt",
         "250lwst_pric_dt", "250lwst_pric_pre_rt", cur_prc, pre_sig, pred_pre,
-        flu_rt, trde_qty, trde_pre, fav_unit, dstr_stk, dstr_rt
+        flu_rt, trde_qty, trde_pre, fav_unit, dstr_stk, dstr_rt, updated_at
     ) VALUES (
         $1, $2, $3, $4, $5,
         $6, $7, $8, $9, $10,
@@ -29,7 +29,7 @@ func UpsertStockInfo(ctx context.Context, pool *pgxpool.Pool, entity model.TbSto
         $26, $27, $28, $29, $30,
         $31, $32, $33, $34, $35,
         $36, $37, $38, $39, $40,
-        $41, $42, $43, $44, $45
+        $41, $42, $43, $44, $45, now()
     )
     ON CONFLICT (stk_cd) DO UPDATE SET
         stk_nm = EXCLUDED.stk_nm,
@@ -75,7 +75,8 @@ func UpsertStockInfo(ctx context.Context, pool *pgxpool.Pool, entity model.TbSto
         trde_pre = EXCLUDED.trde_pre,
         fav_unit = EXCLUDED.fav_unit,
         dstr_stk = EXCLUDED.dstr_stk,
-        dstr_rt = EXCLUDED.dstr_rt
+        dstr_rt = EXCLUDED.dstr_rt,
+        updated_at = now()
     `,
 		// values 그대로
 		entity.StkCd,
@@ -151,7 +152,7 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 				open_pric, low_pric, upl_pric, lst_pric, base_pric,
 				exp_cntr_pric, exp_cntr_qty, "250hgst_pric_dt", "250hgst_pric_pre_rt",
 				"250lwst_pric_dt", "250lwst_pric_pre_rt", cur_prc, pre_sig, pred_pre,
-				flu_rt, trde_qty, trde_pre, fav_unit, dstr_stk, dstr_rt
+				flu_rt, trde_qty, trde_pre, fav_unit, dstr_stk, dstr_rt, updated_at
 			) VALUES (
 				$1,$2,$3,$4,$5,
 				$6,$7,$8,$9,$10,
@@ -161,7 +162,7 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 				$26,$27,$28,$29,$30,
 				$31,$32,$33,$34,$35,
 				$36,$37,$38,$39,$40,
-				$41,$42,$43,$44,$45
+				$41,$42,$43,$44,$45, now()
 			)
 			ON CONFLICT (stk_cd) DO UPDATE SET
 				stk_nm = EXCLUDED.stk_nm,
@@ -207,7 +208,8 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 				trde_pre = EXCLUDED.trde_pre,
 				fav_unit = EXCLUDED.fav_unit,
 				dstr_stk = EXCLUDED.dstr_stk,
-				dstr_rt = EXCLUDED.dstr_rt
+				dstr_rt = EXCLUDED.dstr_rt,
+				updated_at = now()
 		`,
 			entity.StkCd,
 			entity.StkNm,

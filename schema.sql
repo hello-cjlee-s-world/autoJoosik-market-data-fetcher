@@ -73,7 +73,8 @@ DROP INDEX IF EXISTS idx_trade_log_account_stk;
                             trde_pre            VARCHAR(20),              -- 거래대비
                             fav_unit            VARCHAR(20),              -- 액면가단위
                             dstr_stk            VARCHAR(20),              -- 유통주식
-                            dstr_rt             VARCHAR(20)               -- 유통비율
+                            dstr_rt             VARCHAR(20),               -- 유통비율
+                            updated_at          timestamptz  NOT NULL DEFAULT now(),               -- 유통비율
 );
 
 CREATE TABLE tb_trade_info_log ( --체결정보

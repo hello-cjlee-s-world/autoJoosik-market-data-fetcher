@@ -117,12 +117,38 @@ func GetVirtualAccount(ctx context.Context, db DB, accountId int64) (model.TbVir
 
 	err := db.QueryRow(ctx, `
 select 
-    * 
+    account_id,
+	user_id,
+	account_name,
+	cash_balance,
+	total_invested,
+	total_eval,
+	total_pl,
+	total_pl_rate,
+	deposit_amount,
+	withdraw_amount,
+	status,
+	created_at,
+	updated_at
 from 
     tb_virtual_account 
 where 
     account_id = $1
-`, accountId).Scan(&entity)
+`, accountId).Scan(
+		&entity.AccountId,
+		&entity.UserId,
+		&entity.AccountName,
+		&entity.CashBalance,
+		&entity.TotalInvested,
+		&entity.TotalEval,
+		&entity.TotalPl,
+		&entity.TotalPlRate,
+		&entity.DepositAmount,
+		&entity.WithdrawAmount,
+		&entity.Status,
+		&entity.CreatedAt,
+		&entity.UpdatedAt,
+	)
 
 	if err != nil {
 		logger.Error("GetVirtualAccount :: error :: " + err.Error())

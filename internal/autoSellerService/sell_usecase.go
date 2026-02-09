@@ -5,6 +5,7 @@ import (
 	"autoJoosik-market-data-fetcher/internal/kiwoomApi"
 	"autoJoosik-market-data-fetcher/internal/model"
 	"autoJoosik-market-data-fetcher/internal/repository"
+	"autoJoosik-market-data-fetcher/internal/utils"
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"context"
 	"fmt"
@@ -13,8 +14,11 @@ import (
 	"time"
 )
 
-func Sell(stkCd string, qty float64) {
+func Sell(stkCd string, qty float64) error {
 	rst, err := kiwoomApi.GetOrderBookLog(stkCd)
+	if !utils.IsTradableTime(time.Now()) {
+		return fmt.Errorf("not available trade time")
+	}
 	if err == nil {
 		//  주식 거래 예시 트랜잭션으로 묶기
 		ctx := context.Background()
@@ -27,10 +31,10 @@ func Sell(stkCd string, qty float64) {
 		availableQty, err := repository.GetAvailableAssetsByAccountAndStkCd(ctx, tx, 0, stkCd)
 		if err != nil {
 			logger.Error("Sell :: error :: stkCd" + stkCd + " " + err.Error())
+			return err
 		}
 		if availableQty <= 0 {
 			logger.Info("Sell :: 거래 가능한 수량이 없습니다.")
-			return
 		} else if availableQty < qty && availableQty > 0 {
 			qty = availableQty
 			logger.Info("Sell :: 매도 가능 수량 부족, 가능한 수량만 매도합니다.")
@@ -68,6 +72,7 @@ func Sell(stkCd string, qty float64) {
 		orderId, err := repository.InsertOrder(ctx, tx, virtualOrderEntity)
 		if err != nil {
 			fmt.Println("InsertOrderLog", err.Error())
+			return err
 		}
 
 		// !!insert 거래 로그 (원래는 주문 체결 후 insert 지만 가상이라 바로 체결함에 따라 바로 insert)
@@ -88,6 +93,7 @@ func Sell(stkCd string, qty float64) {
 		_, err = repository.InsertTradeLog(ctx, tx, virtualTradeLogEntity)
 		if err != nil {
 			fmt.Println("InsertTradeLog", err.Error())
+			return err
 		}
 
 		// !!upsert 가상 자산 테이블 에
@@ -104,6 +110,7 @@ func Sell(stkCd string, qty float64) {
 		err = repository.UpsertVirtualAsset(ctx, tx, virtualAssetEntity)
 		if err != nil {
 			fmt.Println("UpsertVirtualAsset", err.Error())
+			return err
 		}
 
 		// !!update 가상 계좌 테이블 거래 가능 금액
@@ -114,8 +121,10 @@ func Sell(stkCd string, qty float64) {
 		// 트랜잭션으로 묶어서 commit
 		if err := tx.Commit(ctx); err != nil {
 			logger.Error("Sell :: error ::" + err.Error())
+			return err
 		} else {
 			logger.Info("Sell :: success :: accountId=" + fmt.Sprintf(strconv.FormatInt(accountID, 10)) + ", stkCd=" + stkCd)
 		}
 	}
+	return err
 }

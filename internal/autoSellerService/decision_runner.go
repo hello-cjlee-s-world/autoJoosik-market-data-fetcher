@@ -40,7 +40,10 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 
 		if sell.Do {
 			logger.Info("Sell decision", "stkCd", p.StkCd, "reason", sell.Reason)
-			Sell(p.StkCd, p.Qty)
+			err := Sell(p.StkCd, p.Qty)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"autoJoosik-market-data-fetcher/internal/autoSellerService"
 	"autoJoosik-market-data-fetcher/internal/scheduler"
 	"context"
 	"fmt"
@@ -70,9 +71,36 @@ func (api *Api) Init() {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"running": api.Runner.IsRunning(),
 			"enabled": api.Runner.IsEnabled(),
+		})
+	})
+	// 주식 판매
+	r.POST("/market/sell", func(c *gin.Context) {
+		stkCd := c.Query("stkCd")
+		if err := autoSellerService.Sell(stkCd, 1); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"stkCd": stkCd,
+			"qty":   1,
+		})
+	})
+	// 주식 구매
+	r.POST("/market/buy", func(c *gin.Context) {
+		stkCd := c.Query("stkCd")
+		if err := autoSellerService.Buy(stkCd); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"stkCd": stkCd,
+			"qty":   1,
 		})
 	})
 	srv := &http.Server{

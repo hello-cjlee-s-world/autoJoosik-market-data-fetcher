@@ -341,7 +341,7 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool, r *Runner) {
 				break
 			}
 			now := time.Now()
-			tradable := IsTradableTime(now)
+			tradable := utils.IsTradableTime(now)
 
 			if tradable {
 				was := r.IsRunning()
@@ -489,15 +489,6 @@ func calcScoreToEntity(
 	}
 	logger.Debug("calcScoreToEntity :: Success :: " + ent.StkCd)
 	return ent, nil
-}
-
-// 거래 시간,날짜 제어
-func IsTradableTime(now time.Time) bool {
-	if now.Weekday() == time.Saturday || now.Weekday() == time.Sunday {
-		return false
-	}
-	tradableMin := now.Hour()*60 + now.Minute()
-	return tradableMin >= 9*60+1 && tradableMin <= 15*60+10
 }
 
 func (r *Runner) IsRunning() bool {

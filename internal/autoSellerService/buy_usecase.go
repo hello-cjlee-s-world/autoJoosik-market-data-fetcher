@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func Buy(stkCd string) error {
+func Buy(stkCd string, qty float64) error {
 	rst, err := kiwoomApi.GetOrderBookLog(stkCd)
 	if !utils.IsTradableTime(time.Now()) {
 		return fmt.Errorf("not available trade time")
@@ -29,7 +29,7 @@ func Buy(stkCd string) error {
 		//remainingQty, _ := strconv.ParseFloat(orderBookEntity.SelFprReq, 64)
 
 		// !!insert 주문 정보(상태)
-		qty := 1.0          // 내가 사고 싶은 수량
+		//qty := 1.0          // 내가 사고 싶은 수량
 		remainingQty := 0.0 // 내 주문 기준 남은 수량
 		userId := int64(0)
 		accountID := int64(0)

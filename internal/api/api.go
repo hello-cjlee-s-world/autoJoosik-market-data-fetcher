@@ -3,6 +3,7 @@ package api
 import (
 	"autoJoosik-market-data-fetcher/internal/autoSellerService"
 	"autoJoosik-market-data-fetcher/internal/scheduler"
+	"autoJoosik-market-data-fetcher/internal/utils"
 	"context"
 	"fmt"
 	"github.com/gin-contrib/cors"
@@ -80,7 +81,8 @@ func (api *Api) Init() {
 	// 주식 판매
 	r.POST("/market/sell", func(c *gin.Context) {
 		stkCd := c.Query("stkCd")
-		if err := autoSellerService.Sell(stkCd, 1); err != nil {
+		qty := c.Query("stkCd")
+		if err := autoSellerService.Sell(stkCd, utils.ParseFloat(qty)); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -93,7 +95,8 @@ func (api *Api) Init() {
 	// 주식 구매
 	r.POST("/market/buy", func(c *gin.Context) {
 		stkCd := c.Query("stkCd")
-		if err := autoSellerService.Buy(stkCd); err != nil {
+		qty := c.Query("stkCd")
+		if err := autoSellerService.Buy(stkCd, utils.ParseFloat(qty)); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

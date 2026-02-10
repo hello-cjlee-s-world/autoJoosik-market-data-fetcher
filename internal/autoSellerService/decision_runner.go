@@ -81,7 +81,7 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 
 		if buy.Do {
 			logger.Info("Buy decision", "stkCd", c.StkCd, "reason", buy.Reason)
-			return Buy(c.StkCd)
+			return Buy(c.StkCd, 1)
 		} else {
 			logger.Info("Buy decision", "stkCd", c.StkCd, "reason", buy.Reason)
 		}

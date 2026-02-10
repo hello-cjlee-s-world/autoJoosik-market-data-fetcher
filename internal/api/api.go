@@ -3,7 +3,6 @@ package api
 import (
 	"autoJoosik-market-data-fetcher/internal/autoSellerService"
 	"autoJoosik-market-data-fetcher/internal/scheduler"
-	"autoJoosik-market-data-fetcher/internal/utils"
 	"context"
 	"fmt"
 	"github.com/gin-contrib/cors"
@@ -19,6 +18,10 @@ import (
 type Api struct {
 	Runner *scheduler.Runner
 	Port   int
+}
+type BuyRequest struct {
+	StkCd string  `json:"stkCd" binding:"required"`
+	Qty   float64 `json:"qty" binding:"required"`
 }
 
 func (api *Api) Init() {
@@ -78,32 +81,45 @@ func (api *Api) Init() {
 			"enabled": api.Runner.IsEnabled(),
 		})
 	})
-	// 주식 판매
-	r.POST("/market/sell", func(c *gin.Context) {
-		stkCd := c.Query("stkCd")
-		qty := c.Query("stkCd")
-		if err := autoSellerService.Sell(stkCd, utils.ParseFloat(qty)); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"stkCd": stkCd,
-			"qty":   1,
-		})
-	})
 	// 주식 구매
 	r.POST("/market/buy", func(c *gin.Context) {
-		stkCd := c.Query("stkCd")
-		qty := c.Query("stkCd")
-		if err := autoSellerService.Buy(stkCd, utils.ParseFloat(qty)); err != nil {
+		var req BuyRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		if err := autoSellerService.Buy(req.StkCd, req.Qty); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"stkCd":  req.StkCd,
+			"qty":    req.Qty,
+		})
+	})
+
+	// 주식 판매
+	r.POST("/market/sell", func(c *gin.Context) {
+		var req BuyRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		if err := autoSellerService.Sell(req.StkCd, req.Qty); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-
 		c.JSON(http.StatusOK, gin.H{
-			"stkCd": stkCd,
-			"qty":   1,
+			"status": "success",
+			"stkCd":  req.StkCd,
+			"qty":    req.Qty,
 		})
 	})
 	srv := &http.Server{

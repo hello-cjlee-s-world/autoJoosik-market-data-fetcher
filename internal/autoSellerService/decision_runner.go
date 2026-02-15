@@ -5,7 +5,6 @@ import (
 	"autoJoosik-market-data-fetcher/internal/repository"
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"context"
-	"math"
 	"strconv"
 	"time"
 )
@@ -98,24 +97,4 @@ func defaultBuyConstraints() BuyConstraints {
 		AllowAddBuy:          true,
 		MaxInvestPerStockPct: 0.2,
 	}
-}
-
-func buildMarketState(r1, r2, r3, vol float64) MarketState {
-	state := MarketState{}
-
-	state.IsBull = r1 > 0 && r2 > 0 && r3 > 0
-	state.IsBear = r1 < 0 && r2 < 0
-
-	state.Volatility = vol
-	state.IndexChange = r1
-
-	if math.Abs(r1) >= 2.0 || vol >= 2.5 {
-		state.IsEmergency = true
-		state.Reason = "market_shock"
-	} else {
-		state.IsEmergency = false
-		state.Reason = "normal"
-	}
-
-	return state
 }

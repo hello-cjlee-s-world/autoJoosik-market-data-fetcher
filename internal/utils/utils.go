@@ -49,9 +49,9 @@ func ParseSignedFloat(s string) (float64, error) {
 
 // 거래 시간,날짜 제어
 func IsTradableTime(now time.Time) bool {
-	if now.Weekday() == time.Saturday || now.Weekday() == time.Sunday {
-		return false
-	}
+	//if now.Weekday() == time.Saturday || now.Weekday() == time.Sunday {
+	//	return false
+	//}
 	tradableMin := now.Hour()*60 + now.Minute()
-	return tradableMin >= 9*60 && tradableMin <= 15*60+30
+	return tradableMin >= 9*60 && tradableMin <= 24*60+30
 }

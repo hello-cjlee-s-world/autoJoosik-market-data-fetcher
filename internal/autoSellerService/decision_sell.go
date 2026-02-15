@@ -11,7 +11,9 @@ func ShouldSell(
 	if position.Qty <= 0 {
 		return DecisionResult{false, "no_position"}
 	}
-
+	if position.AvgPrice <= 0 || currentPrice <= 0 {
+		return DecisionResult{false, "invalid_price_data"}
+	}
 	profitRate := (currentPrice - position.AvgPrice) / position.AvgPrice * 100
 
 	// 손절
@@ -20,9 +22,11 @@ func ShouldSell(
 	}
 
 	// 트레일링 스탑
-	drawDown := (currentPrice - position.HighestPrice) / position.HighestPrice * 100
-	if drawDown <= trailingRate {
-		return DecisionResult{true, "trailing_stop"}
+	if position.HighestPrice > 0 {
+		drawDown := (currentPrice - position.HighestPrice) / position.HighestPrice * 100
+		if drawDown <= trailingRate {
+			return DecisionResult{true, "trailing_stop"}
+		}
 	}
 
 	// 익절

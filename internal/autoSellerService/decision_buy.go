@@ -26,13 +26,16 @@ func ShouldBuy(
 	}
 
 	if alreadyHolding {
+		if !constraints.AllowAddBuy {
+			return DecisionResult{false, "additional_buy_not_allowed"}
+		}
 		// 추가 매수 조건 (단순 예시)
 		if stock.Score < 85 {
 			return DecisionResult{false, "additional_buy_condition_not_met"}
 		}
 	}
 
-	if now.Sub(lastBuyTime) < time.Minute*time.Duration(constraints.CooldownAfterBuy) {
+	if now.Sub(lastBuyTime) < constraints.CooldownAfterBuy {
 		return DecisionResult{false, "cool_time"}
 	}
 

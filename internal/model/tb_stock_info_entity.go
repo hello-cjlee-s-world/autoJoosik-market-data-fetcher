@@ -3,6 +3,8 @@ package model
 import (
 	"autoJoosik-market-data-fetcher/pkg/logger"
 	"encoding/json"
+	"fmt"
+	"strings"
 )
 
 // TbStockInfoEntity 주식 기본 정보
@@ -55,12 +57,20 @@ type TbStockInfoEntity struct {
 	UpdatedAt     string `db:"updated_at" json:"updated_at"`
 }
 
-func ToTbStockInfoEntity(str string) TbStockInfoEntity {
+func ToTbStockInfoEntity(str string) (TbStockInfoEntity, error) {
 	var entity TbStockInfoEntity
 	err := json.Unmarshal([]byte(str), &entity)
 	if err != nil {
 		logger.Error("While doing ToTbStockInfoEntity :: ", err.Error())
+		return TbStockInfoEntity{}, err
 	}
 
-	return entity
+	entity.StkCd = strings.TrimSpace(entity.StkCd)
+	if entity.StkCd == "" {
+		err = fmt.Errorf("empty stk_cd in stock info payload")
+		logger.Error("While doing ToTbStockInfoEntity :: ", err.Error())
+		return TbStockInfoEntity{}, err
+	}
+
+	return entity, nil
 }

@@ -254,7 +254,11 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool, r *Runner) {
 				if err != nil {
 					return err
 				}
-				ent := model.ToTbStockInfoEntity(rst)
+				ent, err := model.ToTbStockInfoEntity(rst)
+				if err != nil {
+					logger.Warn("skip invalid stock info payload", "stkCd", stkCd, "err", err.Error())
+					continue
+				}
 				entList = append(entList, ent)
 			}
 

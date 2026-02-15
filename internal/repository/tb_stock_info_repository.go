@@ -6,9 +6,15 @@ import (
 	"context"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"strings"
 )
 
 func UpsertStockInfo(ctx context.Context, pool *pgxpool.Pool, entity model.TbStockInfoEntity) error {
+	entity.StkCd = strings.TrimSpace(entity.StkCd)
+	if entity.StkCd == "" {
+		logger.Warn("UpsertStockInfo :: skip empty stk_cd")
+		return nil
+	}
 	_, err := pool.Exec(ctx,
 		`INSERT INTO tb_stock_info (
         stk_cd, stk_nm, setl_mm, fav, cap,
@@ -142,6 +148,11 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 	batch := &pgx.Batch{}
 
 	for _, entity := range entities {
+		entity.StkCd = strings.TrimSpace(entity.StkCd)
+		if entity.StkCd == "" {
+			logger.Warn("UpsertStockInfoBatch :: skip empty stk_cd")
+			continue
+		}
 		batch.Queue(`
 			INSERT INTO tb_stock_info (
 				stk_cd, stk_nm, setl_mm, fav, cap,
@@ -263,6 +274,10 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 	defer br.Close()
 
 	for _, entity := range entities {
+		if strings.TrimSpace(entity.StkCd) == "" {
+			continue
+		}
+
 		if _, err := br.Exec(); err != nil {
 			return err
 		} else {

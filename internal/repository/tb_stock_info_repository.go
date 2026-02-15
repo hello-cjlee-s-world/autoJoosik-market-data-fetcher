@@ -262,9 +262,11 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 	br := pool.SendBatch(ctx, batch)
 	defer br.Close()
 
-	for range entities {
+	for _, entity := range entities {
 		if _, err := br.Exec(); err != nil {
 			return err
+		} else {
+			logger.Info("UpsertStockInfoBatch :: success :: " + entity.StkCd)
 		}
 	}
 

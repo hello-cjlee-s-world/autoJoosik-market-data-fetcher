@@ -39,6 +39,7 @@ func (api *Api) Init() {
 			"http://127.0.0.1:11018",
 			"http://192.168.45.3:11018",
 			"http://192.168.45.3:11018",
+			"https://cjlee.kr",
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "ajax"},

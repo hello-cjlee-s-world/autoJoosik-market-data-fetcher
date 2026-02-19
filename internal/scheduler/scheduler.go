@@ -254,7 +254,7 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool, r *Runner) {
 				if err != nil {
 					return err
 				}
-				ent, err := model.ToTbStockInfoEntity(rst)
+				ent, err := model.ToTbStockInfoEntityWithFallback(rst, stkCd)
 				if err != nil {
 					logger.Warn("skip invalid stock info payload", "stkCd", stkCd, "err", err.Error())
 					continue

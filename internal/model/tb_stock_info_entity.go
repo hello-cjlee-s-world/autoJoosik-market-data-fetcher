@@ -58,6 +58,10 @@ type TbStockInfoEntity struct {
 }
 
 func ToTbStockInfoEntity(str string) (TbStockInfoEntity, error) {
+	return ToTbStockInfoEntityWithFallback(str, "")
+}
+
+func ToTbStockInfoEntityWithFallback(str string, fallbackStkCd string) (TbStockInfoEntity, error) {
 	var entity TbStockInfoEntity
 	err := json.Unmarshal([]byte(str), &entity)
 	if err != nil {
@@ -67,9 +71,14 @@ func ToTbStockInfoEntity(str string) (TbStockInfoEntity, error) {
 
 	entity.StkCd = strings.TrimSpace(entity.StkCd)
 	if entity.StkCd == "" {
-		err = fmt.Errorf("empty stk_cd in stock info payload")
-		logger.Error("While doing ToTbStockInfoEntity :: ", err.Error())
-		return TbStockInfoEntity{}, err
+		fallbackStkCd = strings.TrimSpace(fallbackStkCd)
+		if fallbackStkCd == "" {
+			err = fmt.Errorf("empty stk_cd in stock info payload")
+			logger.Error("While doing ToTbStockInfoEntity :: ", err.Error())
+			return TbStockInfoEntity{}, err
+		}
+		logger.Warn("ToTbStockInfoEntity :: use fallback stk_cd", "stkCd", fallbackStkCd)
+		entity.StkCd = fallbackStkCd
 	}
 
 	return entity, nil

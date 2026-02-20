@@ -21,3 +21,33 @@ database:
   MaxIdleConn: 10
   ConnMaxLifetime: 10
 
+
+strategyEngine:
+  entryThreshold: 0.58
+  exitScoreCollapse: 0.30
+  tradingStart: "09:00"
+  tradingEnd: "15:20"
+  minTurnover: 300000000
+  maxSpread: 0.005
+  cooldownMinutes: 15
+  maxConcurrentPositions: 8
+  maxPositionWeight: 0.2
+  fixedStopLossPct: 0.03
+  atrStopMultiplier: 2.0
+  takeProfitPct: 0.06
+  trailingStopPct: 0.025
+  dailyLossLimitPct: 0.03
+  orderRetrySeconds: 5
+  requiredGates:
+    - trading_time
+    - liquidity
+    - circuit_breaker
+    - cooldown
+    - position_limit
+  weights:
+    technical: 0.30
+    volume: 0.20
+    flow: 0.15
+    market: 0.10
+    news: 0.15
+    finance: 0.10

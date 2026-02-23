@@ -80,6 +80,10 @@ func (p *PropertiesInfo) Init(configFile string) {
 
 func (p *PropertiesInfo) GetString(key string) string { return viper.GetString(key) }
 
+func UnmarshalKey(key string, out any) error {
+	return viper.UnmarshalKey(key, out)
+}
+
 var (
 	instance *PropertiesInfo
 	once     sync.Once

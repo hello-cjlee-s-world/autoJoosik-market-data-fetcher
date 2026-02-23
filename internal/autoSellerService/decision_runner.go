@@ -227,6 +227,23 @@ WHERE account_id = 0
 	return count > 0
 }
 
+func isScoreCollapsed(ctx context.Context, db repository.DB, stkCd string, collapseDelta float64) bool {
+	var scoreTotal float64
+	err := db.QueryRow(ctx, `
+		SELECT score_total
+		FROM tb_stock_score
+		WHERE stk_cd = $1
+	`, stkCd).Scan(&scoreTotal)
+	if err != nil {
+		return false
+	}
+
+	// scoreTotal is normalized in [0,1].
+	// collapseDelta is configured as a negative value (e.g. -0.35),
+	// so a value <= 1 + delta means the score has materially weakened.
+	return scoreTotal <= 1+collapseDelta
+}
+
 func reprocessPendingOrders(ctx context.Context, db repository.DB) error {
 	_, err := db.Exec(ctx, `
 UPDATE tb_virtual_order

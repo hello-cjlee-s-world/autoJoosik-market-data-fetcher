@@ -23,7 +23,11 @@ func Sell(stkCd string, qty float64) error {
 		//  주식 거래 예시 트랜잭션으로 묶기
 		ctx := context.Background()
 		pool := datasource.GetPool()
-		tx, _ := pool.Begin(ctx)
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			logger.Error("Sell :: tx begin error :: " + err.Error())
+			return err
+		}
 
 		orderBookEntity := model.ToOrderBookLogEntity(rst)
 
@@ -35,6 +39,7 @@ func Sell(stkCd string, qty float64) error {
 		}
 		if availableQty <= 0 {
 			logger.Info("Sell :: 거래 가능한 수량이 없습니다.")
+			return nil
 		} else if availableQty < qty && availableQty > 0 {
 			qty = availableQty
 			logger.Info("Sell :: 매도 가능 수량 부족, 가능한 수량만 매도합니다.")
@@ -57,7 +62,7 @@ func Sell(stkCd string, qty float64) error {
 			AccountID:    accountID,
 			StkCd:        stkCd,
 			Market:       "KOSPI",
-			Side:         "A",
+			Side:         "S",
 			OrderType:    "MARKET",
 			TimeInForce:  "DAY",
 			Price:        price,
@@ -118,6 +123,10 @@ func Sell(stkCd string, qty float64) error {
 			AccountId: 0,
 		}
 		err = repository.UpdateVirtualAccount(ctx, tx, virtualAccountEntity, "SELL", int64(price*qty))
+		if err != nil {
+			logger.Error("UpdateVirtualAccount", err.Error())
+			return err
+		}
 		// 트랜잭션으로 묶어서 commit
 		if err := tx.Commit(ctx); err != nil {
 			logger.Error("Sell :: error ::" + err.Error())

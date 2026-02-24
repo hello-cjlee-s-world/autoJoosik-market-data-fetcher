@@ -11,7 +11,7 @@ func UpsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetE
 		INSERT INTO tb_virtual_asset (
 		  user_id, account_id, stk_cd, market, position_side,
 		  qty, available_qty, avg_price, last_price, highest_price,
-		  invested_amount,
+		  invested_amount, eval_amount, eval_pl, eval_pl_rate,
 		  today_buy_qty, today_sell_qty,
 		  status, last_eval_at,
 		  created_at, updated_at
@@ -19,25 +19,34 @@ func UpsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetE
 		  $1, $2, $3, $4, $7::text,
 		  $5, $5, $6, $6, $6,
 		  ($5::numeric * $6::numeric),
+		  ($5::numeric * $6::numeric),
+		  0,
+		  0,
 		  CASE WHEN $7::text = 'B' THEN $5 ELSE 0 END,
 		  CASE WHEN $7::text = 'S' THEN $5 ELSE 0 END,
 		  $8, NOW(),
 		  NOW(), NOW()
 		)
-		ON CONFLICT (account_id, stk_cd, market)
+		ON CONFLICT (account_id, stk_cd, market, position_side)
 		DO UPDATE SET
 		  user_id = EXCLUDED.user_id,
 
 		  qty = CASE
 			WHEN $7::text = 'B' THEN tb_virtual_asset.qty + EXCLUDED.qty
-			WHEN $7::text = 'S' THEN tb_virtual_asset.qty - EXCLUDED.qty
+			WHEN $7::text = 'S' THEN GREATEST(tb_virtual_asset.qty - EXCLUDED.qty, 0)
 			ELSE tb_virtual_asset.qty
 		  END,
 
 		  available_qty = CASE
 			WHEN $7::text = 'B' THEN tb_virtual_asset.available_qty + EXCLUDED.qty
-			WHEN $7::text = 'S' THEN tb_virtual_asset.available_qty - EXCLUDED.qty
+			WHEN $7::text = 'S' THEN GREATEST(tb_virtual_asset.available_qty - EXCLUDED.qty, 0)
 			ELSE tb_virtual_asset.available_qty
+		  END,
+
+		  invested_amount = CASE
+			WHEN $7::text = 'B' THEN tb_virtual_asset.invested_amount + EXCLUDED.invested_amount
+			WHEN $7::text = 'S' THEN GREATEST(tb_virtual_asset.invested_amount - (tb_virtual_asset.avg_price * EXCLUDED.qty), 0)
+			ELSE tb_virtual_asset.invested_amount
 		  END,
 
 		  avg_price = CASE
@@ -45,11 +54,13 @@ func UpsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetE
 			 AND (tb_virtual_asset.qty + EXCLUDED.qty) > 0
 			  THEN (tb_virtual_asset.invested_amount + EXCLUDED.invested_amount)
 				   / (tb_virtual_asset.qty + EXCLUDED.qty)
+			WHEN $7::text = 'S'
+			 AND (tb_virtual_asset.qty - EXCLUDED.qty) <= 0 THEN 0
 			ELSE tb_virtual_asset.avg_price
 		  END,
 
 		  last_price = EXCLUDED.last_price,
-		     
+
 		highest_price = CASE
 		  WHEN EXCLUDED.position_side = 'B'
 		   AND tb_virtual_asset.highest_price < EXCLUDED.avg_price
@@ -58,18 +69,40 @@ func UpsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetE
 			THEN tb_virtual_asset.highest_price
 		  ELSE tb_virtual_asset.avg_price
 		END,
-		 
 
-		  invested_amount = CASE
-			WHEN $7::text = 'B' THEN tb_virtual_asset.invested_amount + EXCLUDED.invested_amount
-			WHEN $7::text = 'S' THEN tb_virtual_asset.invested_amount - EXCLUDED.invested_amount
-			ELSE tb_virtual_asset.invested_amount
-		  END,
+		eval_amount = CASE
+		  WHEN $7::text = 'B' THEN (tb_virtual_asset.qty + EXCLUDED.qty) * EXCLUDED.last_price
+		  WHEN $7::text = 'S' THEN GREATEST(tb_virtual_asset.qty - EXCLUDED.qty, 0) * EXCLUDED.last_price
+		  ELSE tb_virtual_asset.eval_amount
+		END,
+
+		eval_pl = CASE
+		  WHEN $7::text = 'B' THEN ((tb_virtual_asset.qty + EXCLUDED.qty) * EXCLUDED.last_price) - (tb_virtual_asset.invested_amount + EXCLUDED.invested_amount)
+		  WHEN $7::text = 'S' THEN (GREATEST(tb_virtual_asset.qty - EXCLUDED.qty, 0) * EXCLUDED.last_price)
+									  - GREATEST(tb_virtual_asset.invested_amount - (tb_virtual_asset.avg_price * EXCLUDED.qty), 0)
+		  ELSE tb_virtual_asset.eval_pl
+		END,
+
+		eval_pl_rate = CASE
+		  WHEN $7::text = 'B'
+		   AND (tb_virtual_asset.invested_amount + EXCLUDED.invested_amount) > 0
+			THEN ((((tb_virtual_asset.qty + EXCLUDED.qty) * EXCLUDED.last_price) - (tb_virtual_asset.invested_amount + EXCLUDED.invested_amount))
+					 / (tb_virtual_asset.invested_amount + EXCLUDED.invested_amount)) * 100
+		  WHEN $7::text = 'S'
+		   AND GREATEST(tb_virtual_asset.invested_amount - (tb_virtual_asset.avg_price * EXCLUDED.qty), 0) > 0
+			THEN (((GREATEST(tb_virtual_asset.qty - EXCLUDED.qty, 0) * EXCLUDED.last_price)
+					 - GREATEST(tb_virtual_asset.invested_amount - (tb_virtual_asset.avg_price * EXCLUDED.qty), 0))
+					 / GREATEST(tb_virtual_asset.invested_amount - (tb_virtual_asset.avg_price * EXCLUDED.qty), 0)) * 100
+		  ELSE 0
+		END,
 
 		  today_buy_qty  = tb_virtual_asset.today_buy_qty  + EXCLUDED.today_buy_qty,
 		  today_sell_qty = tb_virtual_asset.today_sell_qty + EXCLUDED.today_sell_qty,
 
-		  status       = EXCLUDED.status,
+		  status = CASE
+			WHEN $7::text = 'S' AND GREATEST(tb_virtual_asset.qty - EXCLUDED.qty, 0) = 0 THEN 'CLOSED'
+			ELSE EXCLUDED.status
+		  END,
 		  last_eval_at = NOW(),
 		  updated_at   = NOW();
 		`,
@@ -79,7 +112,7 @@ func UpsertVirtualAsset(ctx context.Context, db DB, entity model.TbVirtualAssetE
 		entity.Market,
 		entity.Qty,
 		entity.AvgPrice,
-		entity.PositionSide, // 여기서는 "side"로만 사용 (B/S)
+		entity.PositionSide,
 		entity.Status,
 	)
 	if err != nil {

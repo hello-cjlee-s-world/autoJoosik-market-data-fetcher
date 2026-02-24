@@ -104,6 +104,10 @@ func Buy(stkCd string, qty float64) error {
 			AccountId: 0,
 		}
 		err = repository.UpdateVirtualAccount(ctx, tx, virtualAccountEntity, "BUY", int64(price*qty))
+		if err != nil {
+			logger.Error("UpdateVirtualAccount", err.Error())
+			return err
+		}
 		// 트랜잭션으로 묶어서 commit
 		if err := tx.Commit(ctx); err != nil {
 			logger.Error("Buy :: 매수 도중 오류 발생")

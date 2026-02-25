@@ -23,6 +23,19 @@ func Buy(stkCd string, qty float64) error {
 		ctx := context.Background()
 		pool := datasource.GetPool()
 		tx, err := pool.Begin(ctx)
+		if err != nil {
+			logger.Error("Buy :: tx begin error :: " + err.Error())
+			return err
+		}
+		committed := false
+		defer func() {
+			if committed {
+				return
+			}
+			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil && rollbackErr.Error() != "tx is closed" {
+				logger.Error("Buy :: tx rollback error :: " + rollbackErr.Error())
+			}
+		}()
 		orderBookEntity := model.ToOrderBookLogEntity(rst)
 
 		price := utils.ParseFloat(orderBookEntity.SelFprBid)
@@ -113,6 +126,7 @@ func Buy(stkCd string, qty float64) error {
 			logger.Error("Buy :: 매수 도중 오류 발생")
 			return err
 		} else {
+			committed = true
 			logger.Info("Buy :: 매수 성공, stkCd=" + stkCd)
 		}
 

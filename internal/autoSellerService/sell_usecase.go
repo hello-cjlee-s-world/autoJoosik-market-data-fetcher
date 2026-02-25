@@ -28,6 +28,15 @@ func Sell(stkCd string, qty float64) error {
 			logger.Error("Sell :: tx begin error :: " + err.Error())
 			return err
 		}
+		committed := false
+		defer func() {
+			if committed {
+				return
+			}
+			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil && rollbackErr.Error() != "tx is closed" {
+				logger.Error("Sell :: tx rollback error :: " + rollbackErr.Error())
+			}
+		}()
 
 		orderBookEntity := model.ToOrderBookLogEntity(rst)
 
@@ -132,6 +141,7 @@ func Sell(stkCd string, qty float64) error {
 			logger.Error("Sell :: error ::" + err.Error())
 			return err
 		} else {
+			committed = true
 			logger.Info("Sell :: success :: accountId=" + fmt.Sprintf(strconv.FormatInt(accountID, 10)) + ", stkCd=" + stkCd)
 		}
 	}

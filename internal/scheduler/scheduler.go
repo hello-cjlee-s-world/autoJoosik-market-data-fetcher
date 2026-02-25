@@ -10,7 +10,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -238,7 +237,6 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool, r *Runner) {
 				if err != nil {
 					return err
 				}
-				fmt.Println("GetTradeInfoLog", rst)
 				ToEntList := model.ToTbTradeInfoLogEntity(rst, stkCd)
 				entList = append(entList, ToEntList...)
 			}
@@ -256,7 +254,6 @@ func GetSchedule(ctx context.Context, pool *pgxpool.Pool, r *Runner) {
 				if err != nil {
 					return err
 				}
-				fmt.Println("UpsertStockInfo", rst)
 				ent, err := model.ToTbStockInfoEntityWithFallback(rst, stkCd)
 				if err != nil {
 					logger.Warn("skip invalid stock info payload", "stkCd", stkCd, "err", err.Error())

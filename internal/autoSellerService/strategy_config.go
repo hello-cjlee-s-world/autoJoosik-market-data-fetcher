@@ -37,6 +37,9 @@ type StrategyConfig struct {
 		TrailingStopPct    float64 `mapstructure:"trailingStopPct"`
 		ScoreCollapseDelta float64 `mapstructure:"scoreCollapseDelta"`
 	} `mapstructure:"risk"`
+	Sizing struct {
+		MaxOrderQty int `mapstructure:"maxOrderQty"`
+	} `mapstructure:"sizing"`
 }
 
 func LoadStrategyConfig() StrategyConfig {
@@ -73,6 +76,8 @@ func defaultStrategyConfig() StrategyConfig {
 	cfg.Risk.TakeProfitPct = 2.5
 	cfg.Risk.TrailingStopPct = -1.0
 	cfg.Risk.ScoreCollapseDelta = -0.35
+
+	cfg.Sizing.MaxOrderQty = 100
 	return cfg
 }
 

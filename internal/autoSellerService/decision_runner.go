@@ -46,8 +46,9 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 			exit = DecisionResult{Do: true, Reason: "score_collapse"}
 		}
 		if exit.Do {
-			logger.Info("Sell decision", "stkCd", p.StkCd, "reason", exit.Reason)
-			if err := Sell(p.StkCd, p.Qty); err != nil {
+			sellQty := decideSellQty(exit.Reason, p.Qty, cfg.Sizing.MaxOrderQty)
+			logger.Info("Sell decision", "stkCd", p.StkCd, "reason", exit.Reason, "qty", sellQty)
+			if err := Sell(p.StkCd, sellQty); err != nil {
 				return err
 			}
 		}
@@ -153,8 +154,9 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 		evalCtx := EvalContext{Now: time.Now(), Market: market, Candidate: c, Indicators: ind, NewsScore: newsProvider.SentimentScore(ctx, c.StkCd), FlowScore: flowProvider.NetBuyScore(ctx, c.StkCd), VolumeSignal: volumeBurstScore(candles), RecentOrderOpen: hasOpenOrderRecently(ctx, pool, c.StkCd), DailyPnL: dailyPnL, CurrentSpread: 0}
 		pass, score, reasons := entry.Evaluate(evalCtx)
 		if pass && score >= cfg.Entry.ThresholdScore {
-			logger.Info("Buy decision", "stkCd", c.StkCd, "score", score, "reasons", strings.Join(reasons, ","))
-			if err := Buy(c.StkCd, 1); err != nil {
+			buyQty := decideBuyQty(score, cfg.Entry.ThresholdScore, cfg.Sizing.MaxOrderQty)
+			logger.Info("Buy decision", "stkCd", c.StkCd, "score", score, "qty", buyQty, "reasons", strings.Join(reasons, ","))
+			if err := Buy(c.StkCd, buyQty); err != nil {
 				return err
 			}
 			break

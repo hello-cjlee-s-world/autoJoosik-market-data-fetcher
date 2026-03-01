@@ -50,26 +50,26 @@ func LoadStrategyConfig() StrategyConfig {
 
 func defaultStrategyConfig() StrategyConfig {
 	cfg := StrategyConfig{}
-	cfg.Watchlist.MinScore = 0.3
+	cfg.Watchlist.MinScore = 0.25
 	cfg.Watchlist.MaxPicks = 10
 	cfg.Watchlist.NewsWeight = 0.2
 	cfg.Watchlist.VolumeWeight = 0.5
 	cfg.Watchlist.FlowWeight = 0.3
 
-	cfg.Entry.ThresholdScore = 0.55
+	cfg.Entry.ThresholdScore = 0.5
 	cfg.Entry.TechnicalWeight = 0.35
 	cfg.Entry.VolumeWeight = 0.2
 	cfg.Entry.FlowWeight = 0.2
 	cfg.Entry.MarketWeight = 0.15
 	cfg.Entry.NewsWeight = 0.1
 
-	cfg.Gates.MinTurnover = 500000000
-	cfg.Gates.MaxSpreadBps = 35
-	cfg.Gates.CooldownMinutes = 15
+	cfg.Gates.MinTurnover = 300000000
+	cfg.Gates.MaxSpreadBps = 45
+	cfg.Gates.CooldownMinutes = 10
 	cfg.Gates.MaxHoldingCount = 10
 	cfg.Gates.MaxPositionPct = 0.2
-	cfg.Gates.DailyLossLimitPct = -3
-	cfg.Gates.CrashFilterPct = -2.5
+	cfg.Gates.DailyLossLimitPct = -4
+	cfg.Gates.CrashFilterPct = -3.5
 
 	cfg.Risk.FixedStopLossPct = -1.7
 	cfg.Risk.ATRStopMultiplier = 1.2

@@ -24,26 +24,26 @@ database:
 
 strategy:
   watchlist:
-    minScore: 0.30
+    minScore: 0.25
     maxPicks: 10
     newsWeight: 0.20
     volumeWeight: 0.50
     flowWeight: 0.30
   entry:
-    thresholdScore: 0.55
+    thresholdScore: 0.50
     technicalWeight: 0.35
     volumeWeight: 0.20
     flowWeight: 0.20
     marketWeight: 0.15
     newsWeight: 0.10
   gates:
-    minTurnover: 500000000
-    maxSpreadBps: 35
-    cooldownMinutes: 15
+    minTurnover: 300000000
+    maxSpreadBps: 45
+    cooldownMinutes: 10
     maxHoldingCount: 10
     maxPositionPct: 0.20
-    dailyLossLimitPct: -3.0
-    crashFilterPct: -2.5
+    dailyLossLimitPct: -4.0
+    crashFilterPct: -3.5
   risk:
     fixedStopLossPct: -1.7
     atrStopMultiplier: 1.2

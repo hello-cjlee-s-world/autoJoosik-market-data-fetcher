@@ -22,7 +22,7 @@ func GetTradeUniverse(ctx context.Context, pool DB) ([]model.TbTradeUniverseEnti
 	FROM tb_trade_universe
 	WHERE enabled = true
   		AND status = 'NORMAL'
-	LIMIT 15;
+	LIMIT 20;
 `)
 	if err != nil {
 		logger.Error("GetTradeUniverse :: error :: " + err.Error())

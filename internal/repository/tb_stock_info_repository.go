@@ -6,13 +6,36 @@ import (
 	"context"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"reflect"
 	"strings"
 )
+
+func hasStockInfoData(entity model.TbStockInfoEntity) bool {
+	v := reflect.ValueOf(entity)
+	t := reflect.TypeOf(entity)
+
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		if field.Name == "StkCd" || field.Name == "UpdatedAt" {
+			continue
+		}
+
+		if strings.TrimSpace(v.Field(i).String()) != "" {
+			return true
+		}
+	}
+
+	return false
+}
 
 func UpsertStockInfo(ctx context.Context, pool *pgxpool.Pool, entity model.TbStockInfoEntity) error {
 	entity.StkCd = strings.TrimSpace(entity.StkCd)
 	if entity.StkCd == "" {
 		logger.Warn("UpsertStockInfo :: skip empty stk_cd")
+		return nil
+	}
+	if !hasStockInfoData(entity) {
+		logger.Warn("UpsertStockInfo :: skip empty stock info payload", "stk_cd", entity.StkCd)
 		return nil
 	}
 	_, err := pool.Exec(ctx,
@@ -153,6 +176,10 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 			logger.Warn("UpsertStockInfoBatch :: skip empty stk_cd")
 			continue
 		}
+		if !hasStockInfoData(entity) {
+			logger.Warn("UpsertStockInfoBatch :: skip empty stock info payload", "stk_cd", entity.StkCd)
+			continue
+		}
 		batch.Queue(`
 			INSERT INTO tb_stock_info (
 				stk_cd, stk_nm, setl_mm, fav, cap,
@@ -275,6 +302,9 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 
 	for _, entity := range entities {
 		if strings.TrimSpace(entity.StkCd) == "" {
+			continue
+		}
+		if !hasStockInfoData(entity) {
 			continue
 		}
 

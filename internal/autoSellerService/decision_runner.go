@@ -63,15 +63,14 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 	watchPicks := make([]watchCandidate, 0)
 	for _, c := range candidates {
 		candles, _ := LoadRecentCandles(ctx, pool, c.StkCd, 60)
-		ind := BuildIndicators(candles)
 		volumeBurst := volumeBurstScore(candles)
 		flow := flowProvider.NetBuyScore(ctx, c.StkCd)
 		news := newsProvider.SentimentScore(ctx, c.StkCd)
-		score := news*cfg.Watchlist.NewsWeight + volumeBurst*cfg.Watchlist.VolumeWeight + flow*cfg.Watchlist.FlowWeight
+		trend, _ := LoadTradeInfoTrend(ctx, pool, c.StkCd, 20)
+		score := news*cfg.Watchlist.NewsWeight + volumeBurst*cfg.Watchlist.VolumeWeight + flow*cfg.Watchlist.FlowWeight + trend.Composite*cfg.Watchlist.TrendWeight
 		if score >= cfg.Watchlist.MinScore {
 			watchPicks = append(watchPicks, watchCandidate{Candidate: c, Score: score})
 		}
-		_ = ind
 	}
 	watchPicks = topWatchlist(watchPicks, cfg.Watchlist.MaxPicks)
 
@@ -80,6 +79,7 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 		c := w.Candidate
 		candles, _ := LoadRecentCandles(ctx, pool, c.StkCd, 120)
 		ind := BuildIndicators(candles)
+		trend, _ := LoadTradeInfoTrend(ctx, pool, c.StkCd, 30)
 		dailyPnL := EstimateDailyPnLPercent(ctx, pool, 0)
 		entry := NewEngine()
 		entry.AddGate(SimpleGate{name: "trade_time", fn: func(e EvalContext) GateResult {
@@ -150,11 +150,15 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 		entry.AddFactor(WeightedFactor{name: "news", weight: cfg.Entry.NewsWeight, factor: func(e EvalContext) float64 {
 			return e.NewsScore
 		}})
+		entry.AddFactor(WeightedFactor{name: "trade_trend", weight: cfg.Entry.TradeTrendWeight, factor: func(EvalContext) float64 {
+			return trend.Composite
+		}})
 
 		evalCtx := EvalContext{Now: time.Now(), Market: market, Candidate: c, Indicators: ind, NewsScore: newsProvider.SentimentScore(ctx, c.StkCd), FlowScore: flowProvider.NetBuyScore(ctx, c.StkCd), VolumeSignal: volumeBurstScore(candles), RecentOrderOpen: hasOpenOrderRecently(ctx, pool, c.StkCd), DailyPnL: dailyPnL, CurrentSpread: 0}
+		effectiveThreshold := adjustedEntryThreshold(cfg.Entry.ThresholdScore, trend.Composite, cfg.Entry.AggressiveThresholdOffset)
 		pass, score, reasons := entry.Evaluate(evalCtx)
-		if pass && score >= cfg.Entry.ThresholdScore {
-			buyQty := decideBuyQty(score, cfg.Entry.ThresholdScore, cfg.Sizing.MaxOrderQty)
+		if pass && score >= effectiveThreshold {
+			buyQty := decideBuyQty(score, effectiveThreshold, cfg.Sizing.MaxOrderQty)
 			logger.Info("Buy decision", "stkCd", c.StkCd, "score", score, "qty", buyQty, "reasons", strings.Join(reasons, ","))
 			if err := Buy(c.StkCd, buyQty); err != nil {
 				return err
@@ -261,4 +265,12 @@ func lastVolume(candles []OHLCV) float64 {
 		return 0
 	}
 	return candles[len(candles)-1].Volume
+}
+
+func adjustedEntryThreshold(base, trendComposite, offset float64) float64 {
+	threshold := base
+	if trendComposite >= 0.75 {
+		threshold -= offset
+	}
+	return clamp(threshold, 0.35, 0.95)
 }

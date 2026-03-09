@@ -12,14 +12,17 @@ type StrategyConfig struct {
 		NewsWeight   float64 `mapstructure:"newsWeight"`
 		VolumeWeight float64 `mapstructure:"volumeWeight"`
 		FlowWeight   float64 `mapstructure:"flowWeight"`
+		TrendWeight  float64 `mapstructure:"trendWeight"`
 	} `mapstructure:"watchlist"`
 	Entry struct {
-		ThresholdScore  float64 `mapstructure:"thresholdScore"`
-		TechnicalWeight float64 `mapstructure:"technicalWeight"`
-		VolumeWeight    float64 `mapstructure:"volumeWeight"`
-		FlowWeight      float64 `mapstructure:"flowWeight"`
-		MarketWeight    float64 `mapstructure:"marketWeight"`
-		NewsWeight      float64 `mapstructure:"newsWeight"`
+		ThresholdScore            float64 `mapstructure:"thresholdScore"`
+		TechnicalWeight           float64 `mapstructure:"technicalWeight"`
+		VolumeWeight              float64 `mapstructure:"volumeWeight"`
+		FlowWeight                float64 `mapstructure:"flowWeight"`
+		MarketWeight              float64 `mapstructure:"marketWeight"`
+		NewsWeight                float64 `mapstructure:"newsWeight"`
+		TradeTrendWeight          float64 `mapstructure:"tradeTrendWeight"`
+		AggressiveThresholdOffset float64 `mapstructure:"aggressiveThresholdOffset"`
 	} `mapstructure:"entry"`
 	Gates struct {
 		MinTurnover       float64 `mapstructure:"minTurnover"`
@@ -53,15 +56,18 @@ func defaultStrategyConfig() StrategyConfig {
 	cfg.Watchlist.MinScore = 0.25
 	cfg.Watchlist.MaxPicks = 10
 	cfg.Watchlist.NewsWeight = 0.2
-	cfg.Watchlist.VolumeWeight = 0.5
-	cfg.Watchlist.FlowWeight = 0.3
+	cfg.Watchlist.VolumeWeight = 0.45
+	cfg.Watchlist.FlowWeight = 0.2
+	cfg.Watchlist.TrendWeight = 0.15
 
 	cfg.Entry.ThresholdScore = 0.5
-	cfg.Entry.TechnicalWeight = 0.35
+	cfg.Entry.TechnicalWeight = 0.3
 	cfg.Entry.VolumeWeight = 0.2
-	cfg.Entry.FlowWeight = 0.2
+	cfg.Entry.FlowWeight = 0.15
 	cfg.Entry.MarketWeight = 0.15
 	cfg.Entry.NewsWeight = 0.1
+	cfg.Entry.TradeTrendWeight = 0.1
+	cfg.Entry.AggressiveThresholdOffset = 0.08
 
 	cfg.Gates.MinTurnover = 300000000
 	cfg.Gates.MaxSpreadBps = 45

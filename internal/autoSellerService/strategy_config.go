@@ -12,23 +12,31 @@ type StrategyConfig struct {
 		NewsWeight   float64 `mapstructure:"newsWeight"`
 		VolumeWeight float64 `mapstructure:"volumeWeight"`
 		FlowWeight   float64 `mapstructure:"flowWeight"`
+		TrendWeight  float64 `mapstructure:"trendWeight"`
 	} `mapstructure:"watchlist"`
 	Entry struct {
-		ThresholdScore  float64 `mapstructure:"thresholdScore"`
-		TechnicalWeight float64 `mapstructure:"technicalWeight"`
-		VolumeWeight    float64 `mapstructure:"volumeWeight"`
-		FlowWeight      float64 `mapstructure:"flowWeight"`
-		MarketWeight    float64 `mapstructure:"marketWeight"`
-		NewsWeight      float64 `mapstructure:"newsWeight"`
+		ThresholdScore             float64 `mapstructure:"thresholdScore"`
+		TechnicalWeight            float64 `mapstructure:"technicalWeight"`
+		VolumeWeight               float64 `mapstructure:"volumeWeight"`
+		FlowWeight                 float64 `mapstructure:"flowWeight"`
+		MarketWeight               float64 `mapstructure:"marketWeight"`
+		NewsWeight                 float64 `mapstructure:"newsWeight"`
+		TradeTrendWeight           float64 `mapstructure:"tradeTrendWeight"`
+		AggressiveThresholdOffset  float64 `mapstructure:"aggressiveThresholdOffset"`
+		AggressiveMaxOffset        float64 `mapstructure:"aggressiveMaxOffset"`
+		AggressiveTrendFloor       float64 `mapstructure:"aggressiveTrendFloor"`
+		AggressiveBuyPressureFloor float64 `mapstructure:"aggressiveBuyPressureFloor"`
+		AggressiveVolumeFloor      float64 `mapstructure:"aggressiveVolumeFloor"`
 	} `mapstructure:"entry"`
 	Gates struct {
-		MinTurnover       float64 `mapstructure:"minTurnover"`
-		MaxSpreadBps      float64 `mapstructure:"maxSpreadBps"`
-		CooldownMinutes   int     `mapstructure:"cooldownMinutes"`
-		MaxHoldingCount   int     `mapstructure:"maxHoldingCount"`
-		MaxPositionPct    float64 `mapstructure:"maxPositionPct"`
-		DailyLossLimitPct float64 `mapstructure:"dailyLossLimitPct"`
-		CrashFilterPct    float64 `mapstructure:"crashFilterPct"`
+		MinTurnover              float64 `mapstructure:"minTurnover"`
+		MaxSpreadBps             float64 `mapstructure:"maxSpreadBps"`
+		CooldownMinutes          int     `mapstructure:"cooldownMinutes"`
+		AggressiveCooldownFactor float64 `mapstructure:"aggressiveCooldownFactor"`
+		MaxHoldingCount          int     `mapstructure:"maxHoldingCount"`
+		MaxPositionPct           float64 `mapstructure:"maxPositionPct"`
+		DailyLossLimitPct        float64 `mapstructure:"dailyLossLimitPct"`
+		CrashFilterPct           float64 `mapstructure:"crashFilterPct"`
 	} `mapstructure:"gates"`
 	Risk struct {
 		FixedStopLossPct   float64 `mapstructure:"fixedStopLossPct"`
@@ -53,19 +61,27 @@ func defaultStrategyConfig() StrategyConfig {
 	cfg.Watchlist.MinScore = 0.25
 	cfg.Watchlist.MaxPicks = 10
 	cfg.Watchlist.NewsWeight = 0.2
-	cfg.Watchlist.VolumeWeight = 0.5
-	cfg.Watchlist.FlowWeight = 0.3
+	cfg.Watchlist.VolumeWeight = 0.45
+	cfg.Watchlist.FlowWeight = 0.2
+	cfg.Watchlist.TrendWeight = 0.15
 
 	cfg.Entry.ThresholdScore = 0.5
-	cfg.Entry.TechnicalWeight = 0.35
+	cfg.Entry.TechnicalWeight = 0.3
 	cfg.Entry.VolumeWeight = 0.2
-	cfg.Entry.FlowWeight = 0.2
+	cfg.Entry.FlowWeight = 0.15
 	cfg.Entry.MarketWeight = 0.15
 	cfg.Entry.NewsWeight = 0.1
+	cfg.Entry.TradeTrendWeight = 0.1
+	cfg.Entry.AggressiveThresholdOffset = 0.08
+	cfg.Entry.AggressiveMaxOffset = 0.12
+	cfg.Entry.AggressiveTrendFloor = 0.72
+	cfg.Entry.AggressiveBuyPressureFloor = 0.58
+	cfg.Entry.AggressiveVolumeFloor = 0.45
 
 	cfg.Gates.MinTurnover = 300000000
 	cfg.Gates.MaxSpreadBps = 45
 	cfg.Gates.CooldownMinutes = 10
+	cfg.Gates.AggressiveCooldownFactor = 0.35
 	cfg.Gates.MaxHoldingCount = 10
 	cfg.Gates.MaxPositionPct = 0.2
 	cfg.Gates.DailyLossLimitPct = -4

@@ -63,15 +63,14 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 	watchPicks := make([]watchCandidate, 0)
 	for _, c := range candidates {
 		candles, _ := LoadRecentCandles(ctx, pool, c.StkCd, 60)
-		ind := BuildIndicators(candles)
 		volumeBurst := volumeBurstScore(candles)
 		flow := flowProvider.NetBuyScore(ctx, c.StkCd)
 		news := newsProvider.SentimentScore(ctx, c.StkCd)
-		score := news*cfg.Watchlist.NewsWeight + volumeBurst*cfg.Watchlist.VolumeWeight + flow*cfg.Watchlist.FlowWeight
+		trend, _ := LoadTradeInfoTrend(ctx, pool, c.StkCd, 20)
+		score := news*cfg.Watchlist.NewsWeight + volumeBurst*cfg.Watchlist.VolumeWeight + flow*cfg.Watchlist.FlowWeight + trend.Composite*cfg.Watchlist.TrendWeight
 		if score >= cfg.Watchlist.MinScore {
 			watchPicks = append(watchPicks, watchCandidate{Candidate: c, Score: score})
 		}
-		_ = ind
 	}
 	watchPicks = topWatchlist(watchPicks, cfg.Watchlist.MaxPicks)
 
@@ -80,6 +79,10 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 		c := w.Candidate
 		candles, _ := LoadRecentCandles(ctx, pool, c.StkCd, 120)
 		ind := BuildIndicators(candles)
+		volumeSignal := volumeBurstScore(candles)
+		techScore := technicalScore(ind, c.LastPrice)
+		trend, _ := LoadTradeInfoTrend(ctx, pool, c.StkCd, 30)
+		aggressiveSetup := isAggressiveShortTermSetup(trend, volumeSignal, techScore, cfg)
 		dailyPnL := EstimateDailyPnLPercent(ctx, pool, 0)
 		entry := NewEngine()
 		entry.AddGate(SimpleGate{name: "trade_time", fn: func(e EvalContext) GateResult {
@@ -105,7 +108,7 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 			return GateResult{Pass: true}
 		}})
 		entry.AddGate(SimpleGate{name: "cooldown", fn: func(e EvalContext) GateResult {
-			if e.Now.Sub(e.Candidate.LastBuyTime) < cfg.CooldownDuration() {
+			if !canBypassCooldown(e.Now, e.Candidate.LastBuyTime, cfg.CooldownDuration(), cfg.Gates.AggressiveCooldownFactor, aggressiveSetup) {
 				return GateResult{Pass: false, Reason: "cooldown"}
 			}
 			return GateResult{Pass: true}
@@ -150,11 +153,16 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 		entry.AddFactor(WeightedFactor{name: "news", weight: cfg.Entry.NewsWeight, factor: func(e EvalContext) float64 {
 			return e.NewsScore
 		}})
+		entry.AddFactor(WeightedFactor{name: "trade_trend", weight: cfg.Entry.TradeTrendWeight, factor: func(EvalContext) float64 {
+			return trend.Composite
+		}})
 
 		evalCtx := EvalContext{Now: time.Now(), Market: market, Candidate: c, Indicators: ind, NewsScore: newsProvider.SentimentScore(ctx, c.StkCd), FlowScore: flowProvider.NetBuyScore(ctx, c.StkCd), VolumeSignal: volumeBurstScore(candles), RecentOrderOpen: hasOpenOrderRecently(ctx, pool, c.StkCd), DailyPnL: dailyPnL, CurrentSpread: 0}
+		evalCtx.VolumeSignal = volumeSignal
+		effectiveThreshold := adjustedEntryThreshold(cfg.Entry.ThresholdScore, trend, volumeSignal, cfg.Entry.AggressiveThresholdOffset, cfg.Entry.AggressiveMaxOffset)
 		pass, score, reasons := entry.Evaluate(evalCtx)
-		if pass && score >= cfg.Entry.ThresholdScore {
-			buyQty := decideBuyQty(score, cfg.Entry.ThresholdScore, cfg.Sizing.MaxOrderQty)
+		if pass && score >= effectiveThreshold {
+			buyQty := decideBuyQty(score, effectiveThreshold, cfg.Sizing.MaxOrderQty)
 			logger.Info("Buy decision", "stkCd", c.StkCd, "score", score, "qty", buyQty, "reasons", strings.Join(reasons, ","))
 			if err := Buy(c.StkCd, buyQty); err != nil {
 				return err
@@ -261,4 +269,38 @@ func lastVolume(candles []OHLCV) float64 {
 		return 0
 	}
 	return candles[len(candles)-1].Volume
+}
+
+func adjustedEntryThreshold(base float64, trend TradeInfoTrend, volumeSignal, offset, maxOffset float64) float64 {
+	thresholdOffset := 0.0
+	if trend.Composite >= 0.75 {
+		thresholdOffset += offset
+	}
+	if trend.Composite >= 0.85 && volumeSignal >= 0.65 {
+		thresholdOffset += offset * 0.5
+	}
+	if trend.BuyPressure >= 0.62 {
+		thresholdOffset += 0.02
+	}
+	thresholdOffset = clamp(thresholdOffset, 0, maxOffset)
+	return clamp(base-thresholdOffset, 0.3, 0.95)
+}
+
+func canBypassCooldown(now, lastBuyTime time.Time, cooldown time.Duration, aggressiveFactor float64, aggressiveSetup bool) bool {
+	elapsed := now.Sub(lastBuyTime)
+	if elapsed >= cooldown {
+		return true
+	}
+	if !aggressiveSetup {
+		return false
+	}
+	minCooldown := time.Duration(float64(cooldown) * clamp(aggressiveFactor, 0.1, 1.0))
+	return elapsed >= minCooldown
+}
+
+func isAggressiveShortTermSetup(trend TradeInfoTrend, volumeSignal, technical float64, cfg StrategyConfig) bool {
+	return trend.Composite >= cfg.Entry.AggressiveTrendFloor &&
+		trend.BuyPressure >= cfg.Entry.AggressiveBuyPressureFloor &&
+		volumeSignal >= cfg.Entry.AggressiveVolumeFloor &&
+		technical >= 0.5
 }

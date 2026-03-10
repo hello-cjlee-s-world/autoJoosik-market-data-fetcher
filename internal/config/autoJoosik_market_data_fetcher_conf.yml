@@ -27,19 +27,27 @@ strategy:
     minScore: 0.25
     maxPicks: 10
     newsWeight: 0.20
-    volumeWeight: 0.50
-    flowWeight: 0.30
+    volumeWeight: 0.45
+    flowWeight: 0.20
+    trendWeight: 0.15
   entry:
     thresholdScore: 0.50
-    technicalWeight: 0.35
+    technicalWeight: 0.30
     volumeWeight: 0.20
-    flowWeight: 0.20
+    flowWeight: 0.15
     marketWeight: 0.15
     newsWeight: 0.10
+    tradeTrendWeight: 0.10
+    aggressiveThresholdOffset: 0.08
+    aggressiveMaxOffset: 0.12
+    aggressiveTrendFloor: 0.72
+    aggressiveBuyPressureFloor: 0.58
+    aggressiveVolumeFloor: 0.45
   gates:
     minTurnover: 300000000
     maxSpreadBps: 45
     cooldownMinutes: 10
+    aggressiveCooldownFactor: 0.35
     maxHoldingCount: 10
     maxPositionPct: 0.20
     dailyLossLimitPct: -4.0

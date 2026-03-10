@@ -23,13 +23,29 @@ func TestAdjustedEntryThreshold_AggressiveOffset(t *testing.T) {
 	base := 0.5
 	offset := 0.08
 
-	aggressive := adjustedEntryThreshold(base, 0.8, offset)
+	aggressive := adjustedEntryThreshold(base, 0.8, 0.5, IndicatorSnapshot{RSI14: 60, BBMiddle: 100}, 101, offset)
 	if aggressive != 0.42 {
 		t.Fatalf("expected aggressive threshold 0.42, got %.2f", aggressive)
 	}
 
-	normal := adjustedEntryThreshold(base, 0.7, offset)
+	normal := adjustedEntryThreshold(base, 0.7, 0.5, IndicatorSnapshot{RSI14: 50, BBMiddle: 100}, 99, offset)
 	if normal != base {
 		t.Fatalf("expected unchanged threshold %.2f, got %.2f", base, normal)
+	}
+}
+
+func TestAdjustedEntryThreshold_HighMomentumLowersMore(t *testing.T) {
+	base := 0.5
+	offset := 0.08
+	threshold := adjustedEntryThreshold(base, 0.9, 0.7, IndicatorSnapshot{RSI14: 62, BBMiddle: 100}, 102, offset)
+	if threshold != 0.38 {
+		t.Fatalf("expected stronger lowered threshold 0.38, got %.2f", threshold)
+	}
+}
+
+func TestAggressiveBuyQty_BoostedOnStrongMomentum(t *testing.T) {
+	qty := aggressiveBuyQty(0.8, 0.5, 100, 0.9, 0.8, IndicatorSnapshot{MA5: 102, MA20: 100, MACD: 1.2, MACDSignal: 1.0, RSI14: 65, BBMiddle: 100, VWAP: 99}, 103)
+	if qty <= decideBuyQty(0.8, 0.5, 100) {
+		t.Fatalf("expected boosted qty under strong momentum, got %.2f", qty)
 	}
 }

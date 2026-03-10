@@ -35,9 +35,10 @@ strategy:
     technicalWeight: 0.30
     volumeWeight: 0.20
     flowWeight: 0.15
-    marketWeight: 0.15
+    marketWeight: 0.10
     newsWeight: 0.10
     tradeTrendWeight: 0.10
+    shortTermMomentumWeight: 0.15
     aggressiveThresholdOffset: 0.08
   gates:
     minTurnover: 300000000

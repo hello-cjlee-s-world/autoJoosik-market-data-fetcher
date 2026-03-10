@@ -153,12 +153,16 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 		entry.AddFactor(WeightedFactor{name: "trade_trend", weight: cfg.Entry.TradeTrendWeight, factor: func(EvalContext) float64 {
 			return trend.Composite
 		}})
+		entry.AddFactor(WeightedFactor{name: "short_term_momentum", weight: cfg.Entry.ShortTermMomentumWeight, factor: func(e EvalContext) float64 {
+			return shortTermMomentumScore(e.Indicators, e.Candidate.LastPrice, trend.Composite, e.VolumeSignal)
+		}})
 
-		evalCtx := EvalContext{Now: time.Now(), Market: market, Candidate: c, Indicators: ind, NewsScore: newsProvider.SentimentScore(ctx, c.StkCd), FlowScore: flowProvider.NetBuyScore(ctx, c.StkCd), VolumeSignal: volumeBurstScore(candles), RecentOrderOpen: hasOpenOrderRecently(ctx, pool, c.StkCd), DailyPnL: dailyPnL, CurrentSpread: 0}
-		effectiveThreshold := adjustedEntryThreshold(cfg.Entry.ThresholdScore, trend.Composite, cfg.Entry.AggressiveThresholdOffset)
+		volumeSignal := volumeBurstScore(candles)
+		evalCtx := EvalContext{Now: time.Now(), Market: market, Candidate: c, Indicators: ind, NewsScore: newsProvider.SentimentScore(ctx, c.StkCd), FlowScore: flowProvider.NetBuyScore(ctx, c.StkCd), VolumeSignal: volumeSignal, RecentOrderOpen: hasOpenOrderRecently(ctx, pool, c.StkCd), DailyPnL: dailyPnL, CurrentSpread: 0}
+		effectiveThreshold := adjustedEntryThreshold(cfg.Entry.ThresholdScore, trend.Composite, volumeSignal, ind, c.LastPrice, cfg.Entry.AggressiveThresholdOffset)
 		pass, score, reasons := entry.Evaluate(evalCtx)
 		if pass && score >= effectiveThreshold {
-			buyQty := decideBuyQty(score, effectiveThreshold, cfg.Sizing.MaxOrderQty)
+			buyQty := aggressiveBuyQty(score, effectiveThreshold, cfg.Sizing.MaxOrderQty, trend.Composite, volumeSignal, ind, c.LastPrice)
 			logger.Info("Buy decision", "stkCd", c.StkCd, "score", score, "qty", buyQty, "reasons", strings.Join(reasons, ","))
 			if err := Buy(c.StkCd, buyQty); err != nil {
 				return err
@@ -267,10 +271,53 @@ func lastVolume(candles []OHLCV) float64 {
 	return candles[len(candles)-1].Volume
 }
 
-func adjustedEntryThreshold(base, trendComposite, offset float64) float64 {
+func shortTermMomentumScore(ind IndicatorSnapshot, price, trendComposite, volumeSignal float64) float64 {
+	score := 0.0
+	if ind.MA5 > ind.MA20 {
+		score += 0.2
+	}
+	if ind.MACD > ind.MACDSignal {
+		score += 0.2
+	}
+	if ind.RSI14 >= 52 && ind.RSI14 <= 78 {
+		score += 0.2
+	}
+	if price >= ind.BBMiddle {
+		score += 0.15
+	}
+	if price >= ind.VWAP {
+		score += 0.15
+	}
+	score += clamp(trendComposite, 0, 1) * 0.05
+	score += clamp(volumeSignal, 0, 1) * 0.05
+	return clamp(score, 0, 1)
+}
+
+func adjustedEntryThreshold(base, trendComposite, volumeSignal float64, ind IndicatorSnapshot, price, offset float64) float64 {
 	threshold := base
 	if trendComposite >= 0.75 {
 		threshold -= offset
 	}
-	return clamp(threshold, 0.35, 0.95)
+	if trendComposite >= 0.85 && volumeSignal >= 0.65 && ind.RSI14 >= 55 && ind.RSI14 <= 78 && price >= ind.BBMiddle {
+		threshold -= offset * 0.5
+	}
+	return clamp(threshold, 0.30, 0.95)
+}
+
+func aggressiveBuyQty(score, threshold float64, maxOrderQty int, trendComposite, volumeSignal float64, ind IndicatorSnapshot, price float64) float64 {
+	baseQty := decideBuyQty(score, threshold, maxOrderQty)
+	if baseQty <= 0 {
+		return baseQty
+	}
+	if trendComposite >= 0.85 && volumeSignal >= 0.7 && shortTermMomentumScore(ind, price, trendComposite, volumeSignal) >= 0.75 {
+		boosted := baseQty * 1.25
+		if boosted > float64(maxOrderQty) {
+			return float64(maxOrderQty)
+		}
+		if boosted < 1 {
+			return 1
+		}
+		return boosted
+	}
+	return baseQty
 }

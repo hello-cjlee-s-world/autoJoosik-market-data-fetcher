@@ -22,6 +22,7 @@ type StrategyConfig struct {
 		MarketWeight              float64 `mapstructure:"marketWeight"`
 		NewsWeight                float64 `mapstructure:"newsWeight"`
 		TradeTrendWeight          float64 `mapstructure:"tradeTrendWeight"`
+		ShortTermMomentumWeight   float64 `mapstructure:"shortTermMomentumWeight"`
 		AggressiveThresholdOffset float64 `mapstructure:"aggressiveThresholdOffset"`
 	} `mapstructure:"entry"`
 	Gates struct {
@@ -64,9 +65,10 @@ func defaultStrategyConfig() StrategyConfig {
 	cfg.Entry.TechnicalWeight = 0.3
 	cfg.Entry.VolumeWeight = 0.2
 	cfg.Entry.FlowWeight = 0.15
-	cfg.Entry.MarketWeight = 0.15
+	cfg.Entry.MarketWeight = 0.1
 	cfg.Entry.NewsWeight = 0.1
 	cfg.Entry.TradeTrendWeight = 0.1
+	cfg.Entry.ShortTermMomentumWeight = 0.15
 	cfg.Entry.AggressiveThresholdOffset = 0.08
 
 	cfg.Gates.MinTurnover = 300000000

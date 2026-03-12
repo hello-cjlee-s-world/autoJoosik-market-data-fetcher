@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -38,7 +39,7 @@ func Buy(stkCd string, qty float64) error {
 		}()
 		orderBookEntity := model.ToOrderBookLogEntity(rst)
 
-		price := utils.ParseFloat(orderBookEntity.SelFprBid)
+		price := utils.ParseFloat(strings.Replace(orderBookEntity.SelFprBid, "-", "", 1))
 		//remainingQty, _ := strconv.ParseFloat(orderBookEntity.SelFprReq, 64)
 
 		// !!insert 주문 정보(상태)

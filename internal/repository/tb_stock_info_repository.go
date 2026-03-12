@@ -172,6 +172,7 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 
 	for _, entity := range entities {
 		entity.StkCd = strings.TrimSpace(entity.StkCd)
+		logger.Info("UpsertStockInfoBatch :: ", "entity.StkNm", entity.StkNm)
 		if entity.StkCd == "" {
 			logger.Warn("UpsertStockInfoBatch :: skip empty stk_cd")
 			continue

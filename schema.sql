@@ -29,7 +29,7 @@ DROP INDEX IF EXISTS idx_trade_log_account_stk;
 
 
     CREATE TABLE tb_stock_info ( --주식기본정보요청
-                            stk_cd              VARCHAR(20) PRIMARY KEY,   -- 종목코드
+                            stk_cd              VARCHAR(20) PRIMARY KEY,  -- 종목코드
                             stk_nm              VARCHAR(40),              -- 종목명
                             setl_mm             VARCHAR(20),              -- 결산월
                             fav                 VARCHAR(20),              -- 액면가
@@ -73,7 +73,7 @@ DROP INDEX IF EXISTS idx_trade_log_account_stk;
                             trde_pre            VARCHAR(20),              -- 거래대비
                             fav_unit            VARCHAR(20),              -- 액면가단위
                             dstr_stk            VARCHAR(20),              -- 유통주식
-                            dstr_rt             VARCHAR(20),               -- 유통비율
+                            dstr_rt             VARCHAR(20),              -- 유통비율
                             updated_at          timestamptz  NOT NULL DEFAULT now(),               -- 유통비율
 );
 

@@ -5,56 +5,57 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // TbStockInfoEntity 주식 기본 정보
 type TbStockInfoEntity struct {
-	StkCd         string `db:"stk_cd" json:"stk_cd"`
-	StkNm         string `db:"stk_nm" json:"stk_nm"`
-	SetlMm        string `db:"setl_mm" json:"setl_mm"`
-	Fav           string `db:"fav" json:"fav"`
-	Cap           string `db:"cap" json:"cap"`
-	FloStk        string `db:"flo_stk" json:"flo_stk"`
-	CrdRt         string `db:"crd_rt" json:"crd_rt"`
-	OyrHgst       string `db:"oyr_hgst" json:"oyr_hgst"`
-	OyrLwst       string `db:"oyr_lwst" json:"oyr_lwst"`
-	Mac           string `db:"mac" json:"mac"`
-	MacWght       string `db:"mac_wght" json:"mac_wght"`
-	ForExhRt      string `db:"for_exh_rt" json:"for_exh_rt"`
-	ReplPric      string `db:"repl_pric" json:"repl_pric"`
-	Per           string `db:"per" json:"per"`
-	Eps           string `db:"eps" json:"eps"`
-	Roe           string `db:"roe" json:"roe"`
-	Pbr           string `db:"pbr" json:"pbr"`
-	Ev            string `db:"ev" json:"ev"`
-	Bps           string `db:"bps" json:"bps"`
-	SaleAmt       string `db:"sale_amt" json:"sale_amt"`
-	BusPro        string `db:"bus_pro" json:"bus_pro"`
-	CupNga        string `db:"cup_nga" json:"cup_nga"`
-	Hgst250       string `db:"250hgst" json:"250hgst"`
-	Lwst250       string `db:"250lwst" json:"250lwst"`
-	HighPric      string `db:"high_pric" json:"high_pric"`
-	OpenPric      string `db:"open_pric" json:"open_pric"`
-	LowPric       string `db:"low_pric" json:"low_pric"`
-	UplPric       string `db:"upl_pric" json:"upl_pric"`
-	LstPric       string `db:"lst_pric" json:"lst_pric"`
-	BasePric      string `db:"base_pric" json:"base_pric"`
-	ExpCntrPric   string `db:"exp_cntr_pric" json:"exp_cntr_pric"`
-	ExpCntrQty    string `db:"exp_cntr_qty" json:"exp_cntr_qty"`
-	Hgst250PricDt string `db:"250hgst_pric_dt" json:"250hgst_pric_dt"`
-	Hgst250PreRt  string `db:"250hgst_pric_pre_rt" json:"250hgst_pric_pre_rt"`
-	Lwst250PricDt string `db:"250lwst_pric_dt" json:"250lwst_pric_dt"`
-	Lwst250PreRt  string `db:"250lwst_pric_pre_rt" json:"250lwst_pric_pre_rt"`
-	CurPrc        string `db:"cur_prc" json:"cur_prc"`
-	PreSig        string `db:"pre_sig" json:"pre_sig"`
-	PredPre       string `db:"pred_pre" json:"pred_pre"`
-	FluRt         string `db:"flu_rt" json:"flu_rt"`
-	TrdeQty       string `db:"trde_qty" json:"trde_qty"`
-	TrdePre       string `db:"trde_pre" json:"trde_pre"`
-	FavUnit       string `db:"fav_unit" json:"fav_unit"`
-	DstrStk       string `db:"dstr_stk" json:"dstr_stk"`
-	DstrRt        string `db:"dstr_rt" json:"dstr_rt"`
-	UpdatedAt     string `db:"updated_at" json:"updated_at"`
+	StkCd         string    `db:"stk_cd" json:"stk_cd"`
+	StkNm         string    `db:"stk_nm" json:"stk_nm"`
+	SetlMm        string    `db:"setl_mm" json:"setl_mm"`
+	Fav           string    `db:"fav" json:"fav"`
+	Cap           string    `db:"cap" json:"cap"`
+	FloStk        string    `db:"flo_stk" json:"flo_stk"`
+	CrdRt         string    `db:"crd_rt" json:"crd_rt"`
+	OyrHgst       string    `db:"oyr_hgst" json:"oyr_hgst"`
+	OyrLwst       string    `db:"oyr_lwst" json:"oyr_lwst"`
+	Mac           string    `db:"mac" json:"mac"`
+	MacWght       string    `db:"mac_wght" json:"mac_wght"`
+	ForExhRt      string    `db:"for_exh_rt" json:"for_exh_rt"`
+	ReplPric      string    `db:"repl_pric" json:"repl_pric"`
+	Per           string    `db:"per" json:"per"`
+	Eps           string    `db:"eps" json:"eps"`
+	Roe           string    `db:"roe" json:"roe"`
+	Pbr           string    `db:"pbr" json:"pbr"`
+	Ev            string    `db:"ev" json:"ev"`
+	Bps           string    `db:"bps" json:"bps"`
+	SaleAmt       string    `db:"sale_amt" json:"sale_amt"`
+	BusPro        string    `db:"bus_pro" json:"bus_pro"`
+	CupNga        string    `db:"cup_nga" json:"cup_nga"`
+	Hgst250       string    `db:"250hgst" json:"250hgst"`
+	Lwst250       string    `db:"250lwst" json:"250lwst"`
+	HighPric      string    `db:"high_pric" json:"high_pric"`
+	OpenPric      string    `db:"open_pric" json:"open_pric"`
+	LowPric       string    `db:"low_pric" json:"low_pric"`
+	UplPric       string    `db:"upl_pric" json:"upl_pric"`
+	LstPric       string    `db:"lst_pric" json:"lst_pric"`
+	BasePric      string    `db:"base_pric" json:"base_pric"`
+	ExpCntrPric   string    `db:"exp_cntr_pric" json:"exp_cntr_pric"`
+	ExpCntrQty    string    `db:"exp_cntr_qty" json:"exp_cntr_qty"`
+	Hgst250PricDt string    `db:"250hgst_pric_dt" json:"250hgst_pric_dt"`
+	Hgst250PreRt  string    `db:"250hgst_pric_pre_rt" json:"250hgst_pric_pre_rt"`
+	Lwst250PricDt string    `db:"250lwst_pric_dt" json:"250lwst_pric_dt"`
+	Lwst250PreRt  string    `db:"250lwst_pric_pre_rt" json:"250lwst_pric_pre_rt"`
+	CurPrc        string    `db:"cur_prc" json:"cur_prc"`
+	PreSig        string    `db:"pre_sig" json:"pre_sig"`
+	PredPre       string    `db:"pred_pre" json:"pred_pre"`
+	FluRt         string    `db:"flu_rt" json:"flu_rt"`
+	TrdeQty       string    `db:"trde_qty" json:"trde_qty"`
+	TrdePre       string    `db:"trde_pre" json:"trde_pre"`
+	FavUnit       string    `db:"fav_unit" json:"fav_unit"`
+	DstrStk       string    `db:"dstr_stk" json:"dstr_stk"`
+	DstrRt        string    `db:"dstr_rt" json:"dstr_rt"`
+	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
 }
 
 func ToTbStockInfoEntity(str string) (TbStockInfoEntity, error) {
@@ -82,4 +83,57 @@ func ToTbStockInfoEntityWithFallback(str string, fallbackStkCd string) (TbStockI
 	}
 
 	return entity, nil
+}
+
+func ReturnColumnName() map[string]string {
+	m := map[string]string{
+		"StkCd":         "종목코드",
+		"StkNm":         "종목명",
+		"SetlMm":        "결산월",
+		"Fav":           "액면가",
+		"Cap":           "자본금",
+		"FloStk":        "상장주식",
+		"CrdRt":         "신용비율",
+		"OyrHgst":       "연중최고",
+		"OyrLwst":       "연중최저",
+		"Mac":           "시가총액",
+		"MacWght":       "시가총액비중",
+		"ForExhRt":      "외인소진률",
+		"ReplPric":      "대용가",
+		"Per":           "PER",
+		"Eps":           "EPS",
+		"Roe":           "ROE",
+		"Pbr":           "PBR",
+		"Ev":            "EV",
+		"Bps":           "BPS",
+		"SaleAmt":       "매출액",
+		"BusPro":        "영업이익",
+		"CupNga":        "당기순이익",
+		"Hgst250":       "250최고",
+		"Lwst250":       "250최저",
+		"HighPric":      "고가",
+		"OpenPric":      "시가",
+		"LowPric":       "저가",
+		"UplPric":       "상한가",
+		"LstPric":       "하한가",
+		"BasePric":      "기준가",
+		"ExpCntrPric":   "예상체결가",
+		"ExpCntrQty":    "예상체결수량",
+		"Hgst250PricDt": "250최고가일",
+		"Hgst250PreRt":  "250최고가대비율",
+		"Lwst250PricDt": "250최저가일",
+		"Lwst250PreRt":  "250최저가대비율",
+		"CurPrc":        "현재가",
+		"PreSig":        "대비기호",
+		"PredPre":       "전일대비",
+		"FluRt":         "등락율",
+		"TrdeQty":       "거래량",
+		"TrdePre":       "거래대비",
+		"FavUnit":       "액면가단위",
+		"DstrStk":       "유통주식",
+		"DstrRt":        "유통비율",
+		"UpdatedAt":     "수정일",
+	}
+
+	return m
 }

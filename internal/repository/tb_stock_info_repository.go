@@ -31,11 +31,11 @@ func hasStockInfoData(entity model.TbStockInfoEntity) bool {
 func UpsertStockInfo(ctx context.Context, pool *pgxpool.Pool, entity model.TbStockInfoEntity) error {
 	entity.StkCd = strings.TrimSpace(entity.StkCd)
 	if entity.StkCd == "" {
-		logger.Warn("UpsertStockInfo :: skip empty stk_cd")
+		logger.Warn("repository:UpsertStockInfo :: skip empty stk_cd")
 		return nil
 	}
 	if !hasStockInfoData(entity) {
-		logger.Warn("UpsertStockInfo :: skip empty stock info payload", "stk_cd", entity.StkCd)
+		logger.Warn("repository:UpsertStockInfo :: skip empty stock info payload", "stk_cd", entity.StkCd)
 		return nil
 	}
 	_, err := pool.Exec(ctx,
@@ -156,10 +156,10 @@ func UpsertStockInfo(ctx context.Context, pool *pgxpool.Pool, entity model.TbSto
 	)
 
 	if err != nil {
-		logger.Error("UpsertStockInfo :: error :: ", "stk_cd", entity.StkCd)
+		logger.Error("repository:UpsertStockInfo :: error :: ", "stk_cd", entity.StkCd)
 		return err
 	}
-	logger.Debug("UpsertStockInfo :: success :: ", "stk_cd", entity.StkCd)
+	logger.Debug("repository:UpsertStockInfo :: success :: ", "stk_cd", entity.StkCd)
 	return nil
 }
 
@@ -172,13 +172,13 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 
 	for _, entity := range entities {
 		entity.StkCd = strings.TrimSpace(entity.StkCd)
-		logger.Info("UpsertStockInfoBatch :: ", "entity.StkNm", entity.StkNm)
+		logger.Info("repository:UpsertStockInfoBatch :: ", "entity.StkNm", entity.StkNm)
 		if entity.StkCd == "" {
-			logger.Warn("UpsertStockInfoBatch :: skip empty stk_cd")
+			logger.Warn("repository:UpsertStockInfoBatch :: skip empty stk_cd")
 			continue
 		}
 		if !hasStockInfoData(entity) {
-			logger.Warn("UpsertStockInfoBatch :: skip empty stock info payload", "stk_cd", entity.StkCd)
+			logger.Warn("repository:UpsertStockInfoBatch :: skip empty stock info payload", "stk_cd", entity.StkCd)
 			continue
 		}
 		batch.Queue(`
@@ -312,7 +312,7 @@ func UpsertStockInfoBatch(ctx context.Context, pool *pgxpool.Pool, entities []mo
 		if _, err := br.Exec(); err != nil {
 			return err
 		} else {
-			logger.Info("UpsertStockInfoBatch :: success :: " + entity.StkCd)
+			logger.Info("repository:UpsertStockInfoBatch :: success :: " + entity.StkCd)
 		}
 	}
 
@@ -334,8 +334,87 @@ FROM tb_stock_info
 WHERE stk_cd = $1;
 `, stkCd).Scan(&entity.Per, &entity.Roe, &entity.Pbr, &entity.Eps, &entity.ForExhRt, &entity.Cap)
 	if err != nil {
-		logger.Error("GetStockFundamental :: error :: " + err.Error())
+		logger.Error("repository:GetStockFundamental :: error :: " + err.Error())
 	}
 
 	return entity, nil
+}
+
+// Api 주식 정보 조회 위한
+func GetStockInfos(ctx context.Context, pool DB) ([]model.TbStockInfoEntity, error) {
+	var entities []model.TbStockInfoEntity
+
+	rows, err := pool.Query(ctx, `
+	SELECT 
+		*
+	FROM tb_stock_info;
+`)
+	if err != nil {
+		logger.Error("repository:GetStockInfos :: error :: " + err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var c model.TbStockInfoEntity
+		if err := rows.Scan(
+			&c.StkCd,
+			&c.StkNm,
+			&c.SetlMm,
+			&c.Fav,
+			&c.Cap,
+			&c.FloStk,
+			&c.CrdRt,
+			&c.OyrHgst,
+			&c.OyrLwst,
+			&c.Mac,
+			&c.MacWght,
+			&c.ForExhRt,
+			&c.ReplPric,
+			&c.Per,
+			&c.Eps,
+			&c.Roe,
+			&c.Pbr,
+			&c.Ev,
+			&c.Bps,
+			&c.SaleAmt,
+			&c.BusPro,
+			&c.CupNga,
+			&c.Hgst250,
+			&c.Lwst250,
+			&c.HighPric,
+			&c.OpenPric,
+			&c.LowPric,
+			&c.UplPric,
+			&c.LstPric,
+			&c.BasePric,
+			&c.ExpCntrPric,
+			&c.ExpCntrQty,
+			&c.Hgst250PricDt,
+			&c.Hgst250PreRt,
+			&c.Lwst250PricDt,
+			&c.Lwst250PreRt,
+			&c.CurPrc,
+			&c.PreSig,
+			&c.PredPre,
+			&c.FluRt,
+			&c.TrdeQty,
+			&c.TrdePre,
+			&c.FavUnit,
+			&c.DstrStk,
+			&c.DstrRt,
+			&c.UpdatedAt,
+		); err != nil {
+			logger.Error("repository:GetStockInfos :: error :: " + err.Error())
+			return nil, err
+		}
+		entities = append(entities, c)
+	}
+
+	if err := rows.Err(); err != nil {
+		logger.Error("repository:GetStockInfos :: error :: " + err.Error())
+		return nil, err
+	}
+
+	return entities, nil
 }

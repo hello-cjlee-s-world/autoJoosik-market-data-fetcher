@@ -2,6 +2,7 @@ package api
 
 import (
 	"autoJoosik-market-data-fetcher/internal/autoSellerService"
+	"autoJoosik-market-data-fetcher/internal/model"
 	"autoJoosik-market-data-fetcher/internal/scheduler"
 	"context"
 	"fmt"
@@ -127,6 +128,24 @@ func (api *Api) Init() {
 			"qty":    req.Qty,
 		})
 	})
+
+	// 종목 정보 불러오기
+	r.GET("/market/stockInfos", func(c *gin.Context) {
+		entities, err := autoSellerService.GetStockInfos()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "success",
+			"data":    entities,
+			"mapping": model.ReturnColumnName(),
+		})
+	})
+
 	srv := &http.Server{
 		Addr:              ":" + fmt.Sprint(api.Port),
 		Handler:           r,

@@ -1,5 +1,7 @@
 # auto-joosik-market-data-fetcher
-   
+
+![img_1.png](img_1.png)
+
 # Build
 # linux build / amd64
 $env:GOOS="linux"; $env:GOARCH="amd64"; go build -ldflags="-s -w" -trimpath -o .\build\autoJoosik-market-data-fetcher .\cmd\main.go
@@ -23,7 +25,7 @@ logging:
     maxSize: 10
     maxBackups: 10
     maxAge: 10
-    compress: false
+    compress: false!
     consoleOutput: true
 
 database:

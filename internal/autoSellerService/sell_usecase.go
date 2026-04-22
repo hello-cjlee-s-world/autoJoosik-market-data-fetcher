@@ -15,11 +15,14 @@ import (
 )
 
 func Sell(stkCd string, qty float64) error {
-	rst, err := kiwoomApi.GetOrderBookLog(stkCd)
 	if !utils.IsTradableTime(time.Now()) {
 		return fmt.Errorf("not available trade time")
 	}
-	if err == nil {
+	rst, err := kiwoomApi.GetOrderBookLog(stkCd)
+	if err != nil {
+		return err
+	}
+	{
 		//  주식 거래 예시 트랜잭션으로 묶기
 		ctx := context.Background()
 		pool := datasource.GetPool()
@@ -85,7 +88,7 @@ func Sell(stkCd string, qty float64) error {
 		}
 		orderId, err := repository.InsertOrder(ctx, tx, virtualOrderEntity)
 		if err != nil {
-			fmt.Println("InsertOrderLog", err.Error())
+			logger.Error("InsertOrderLog", err.Error())
 			return err
 		}
 
@@ -106,7 +109,7 @@ func Sell(stkCd string, qty float64) error {
 
 		_, err = repository.InsertTradeLog(ctx, tx, virtualTradeLogEntity)
 		if err != nil {
-			fmt.Println("InsertTradeLog", err.Error())
+			logger.Error("InsertTradeLog", err.Error())
 			return err
 		}
 
@@ -123,7 +126,7 @@ func Sell(stkCd string, qty float64) error {
 		}
 		err = repository.UpsertVirtualAsset(ctx, tx, virtualAssetEntity)
 		if err != nil {
-			fmt.Println("UpsertVirtualAsset", err.Error())
+			logger.Error("UpsertVirtualAsset", err.Error())
 			return err
 		}
 
@@ -145,5 +148,5 @@ func Sell(stkCd string, qty float64) error {
 			logger.Info("Sell :: success :: accountId=" + fmt.Sprintf(strconv.FormatInt(accountID, 10)) + ", stkCd=" + stkCd)
 		}
 	}
-	return err
+	return nil
 }

@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 )
@@ -178,10 +177,4 @@ func requestLogger() gin.HandlerFunc {
 		c.Next()
 		_ = start // 필요하면 latency 찍기
 	}
-}
-
-func parseID(s string) (int64, error) {
-	// strconv.ParseInt 래퍼
-	// (여기서 에러 메시지/범위 처리 등 커스텀 가능)
-	return strconv.ParseInt(s, 10, 64)
 }

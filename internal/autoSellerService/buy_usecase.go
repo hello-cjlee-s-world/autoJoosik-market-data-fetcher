@@ -15,11 +15,14 @@ import (
 )
 
 func Buy(stkCd string, qty float64) error {
-	rst, err := kiwoomApi.GetOrderBookLog(stkCd)
 	if !utils.IsTradableTime(time.Now()) {
 		return fmt.Errorf("not available trade time")
 	}
-	if err == nil {
+	rst, err := kiwoomApi.GetOrderBookLog(stkCd)
+	if err != nil {
+		return err
+	}
+	{
 		//  주식 거래 예시 트랜잭션으로 묶기
 		ctx := context.Background()
 		pool := datasource.GetPool()
@@ -132,6 +135,5 @@ func Buy(stkCd string, qty float64) error {
 		}
 
 	}
-
-	return err
+	return nil
 }

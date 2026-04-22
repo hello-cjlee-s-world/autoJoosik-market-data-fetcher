@@ -28,30 +28,13 @@ func KiwoomInit(kiwoomConfig KiwoomConfig) {
 	if err != nil {
 		logger.Info("토큰 요청 실패:", err)
 		return
+	}
+	logger.Info("Token Value : " + token)
+	tokenObj := map[string]string{}
+	if err = json.Unmarshal([]byte(token), &tokenObj); err == nil {
+		kwConfig.Token = tokenObj["access_token"]
 	} else {
-		logger.Info("Token Value : " + token)
-		tokenObj := map[string]string{}
-		err = json.Unmarshal([]byte(token), &tokenObj)
-		if err != nil {
-			kwConfig.Token = tokenObj["token"]
-			//rst, err := GetStockInfo("005930")
-			//if err != nil {
-			//	fmt.Println("결과값 test 실패 ::", rst)
-			//	return
-			//} else {
-			//	fmt.Println("결과값 test :: " + rst)
-			//}
-
-			//rst, err = GetOrderBookLog("005930")
-			//if err != nil {
-			//	fmt.Println("결과값 test 실패 ::", rst)
-			//	return
-			//} else {
-			//	_ = model.ToOrderBookLogEntity(rst)
-			//}
-
-		}
-
+		logger.Info("토큰 파싱 실패:", err)
 	}
 }
 

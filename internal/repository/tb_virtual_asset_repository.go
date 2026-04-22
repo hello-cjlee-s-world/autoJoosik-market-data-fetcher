@@ -178,7 +178,7 @@ func GetHoldingPositions(ctx context.Context, db DB, accountId int64) ([]model.H
 	}
 	defer rows.Close()
 
-	if rows.Next() {
+	for rows.Next() {
 		var position model.HoldingPositionEntity
 		if err := rows.Scan(
 			&position.AccountId,

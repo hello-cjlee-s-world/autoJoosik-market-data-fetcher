@@ -167,7 +167,7 @@ func DecideAndExecute(ctx context.Context, pool repository.DB) error {
 			if err := Buy(c.StkCd, buyQty); err != nil {
 				return err
 			}
-			break
+			continue
 		}
 		logger.Info("Buy reject", "stkCd", c.StkCd, "score", score, "reasons", strings.Join(reasons, ","))
 	}
